@@ -776,3 +776,56 @@ else if(p2.health <= 0) triggerRoundEnd(1);
 requestAnimationFrame(loop);
 }
 loop();
+           update() {
+        // Decay frames
+        if(this.globalCooldown > 0) this.globalCooldown--;
+        if(this.attackTimer > 0) this.attackTimer--;
+        if(this.airAttackCooldown > 0) this.airAttackCooldown--;
+
+        // Apply continuous running speed ghost trails
+        this.animTimer++;
+        this.isDashing = Math.abs(this.vx) > 1.5 && this.isGrounded;
+        if(this.isDashing && this.animTimer % 4 === 0) {
+            ghosts.push({ x: this.x, y: this.y, joints: this.getJointPositions(), alpha: 0.4, color: this.type });
+        }
+
+        // Gravity implementation
+        this.y += this.vy;
+        this.x += this.vx;
+        this.vx *= 0.82;
+        if(!this.isGrounded) {
+            this.vy += this.gravity;
+            if(this.y >= 400) {
+                this.y = 400; this.vy = 0; this.isGrounded = true; this.jumpCount = 0;
+            }
+        }
+
+        // Stage edge enforcement boundaries
+        if(this.x < 30) this.x = 30;
+        if(this.x > canvas.width - 30) this.x = canvas.width - 30;
+
+        // Execute continuous tick tracking updates on unique active specials
+        if(this.ultActive) {
+            this.ultTimer--;
+            let target = this.isAI ? p1 : p2;
+
+            // Asta Ultimate Hitbox: Standard rush checking profile
+            if(this.type === 'asta') {
+                if(Math.abs(this.x - target.x) < 50 && Math.abs(this.y - target.y) < 60) {
+                    target.takeDamage(25, this.side * 18);
+                    this.ultActive = false; // Ultimate hits and resolves
+                }
+            }
+
+            // Sukuna Ultimate Hitbox: Malevolent Shrine continuous slashing tick fields
+            if(this.type === 'sukuna' && this.ultTimer % 6 === 0) {
+                if(Math.abs(this.x - target.x) < 180) {
+                    target.takeDamage(2, (target.x > this.x ? 1 : -1) * 2);
+                    spawnBurst(target.x, target.y - 30, '#ff1111', 4);
+                }
+            }
+
+            // Clean up flags when lifespan duration window concludes
+            if(this.ultTimer <= 0) this.ultActive = false;
+        }
+    }
