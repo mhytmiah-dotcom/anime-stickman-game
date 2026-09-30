@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Stickman Showdown: Ultimate Edition</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0d0d13;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        #game-container {
+            position: relative;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+        }
+        canvas {
+            background: #15151a;
+            display: block;
+            border-radius: 6px;
+        }
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 800px;
+            height: 500px;
+            pointer-events: none;
+            box-sizing: border-box;
+            padding: 20px;
+        }
+        /* HUD Style */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .player-panel {
+            width: 38%;
+        }
+        .p2-panel {
+            text-align: right;
+        }
+        .name {
+            font-size: 22px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+            margin-bottom: 5px;
+        }
+        .bar-container {
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #444;
+            height: 18px;
+            border-radius: 9px;
+            overflow: hidden;
+            position: relative;
+        }
+        .health-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff2a2a, #ff5555);
+            transition: width 0.15s ease-out;
+        }
+        .health-bar.low-health {
+            animation: danger-pulse 0.5s infinite alternate;
+        }
+        @keyframes danger-pulse {
+            from { background: #ff0000; box-shadow: 0 0 5px #ff0000; }
+            to { background: #aa0000; box-shadow: none; }
+        }
+        .cooldown-indicator {
+            font-size: 11px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-top: 4px;
+            min-height: 15px;
+            text-shadow: 1px 1px 2px #000;
+        }
+        .rounds {
+            display: flex;
+            gap: 6px;
+            margin-top: 5px;
+        }
+        .p2-panel .rounds {
+            justify-content: flex-end;
+        }
+        .dot {
+            width: 14px;
+            height: 14px;
+            background: rgba(255,255,255,0.15);
+            border: 2px solid #777;
+            border-radius: 50%;
+        }
+        .dot.won {
+            background: #ffcc00;
+            border-color: #fff;
+            box-shadow: 0 0 10px #ffcc00;
+        }
+        /* Screen Overlays */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(8, 8, 12, 0.96);
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .hidden {
+            display: none !important;
+        }
+        h1 {
+            font-size: 40px;
+            margin: 0 0 25px 0;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #ff3366;
+            text-shadow: 0 0 15px rgba(255,51,102,0.6);
+        }
+        h2 {
+            font-size: 18px;
+            color: #888;
+            margin: 0 0 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .grid {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .card {
+            background: #1c1c24;
+            border: 3px solid #3a3a4a;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 800;
+            transition: all 0.2s;
+            min-width: 90px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .card:hover, .card.selected {
+            border-color: #ff3366;
+            background: #2d2d3d;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255,51,102,0.4);
+        }
+        button.start-btn {
+            background: linear-gradient(135deg, #ff3366, #ff5588);
+            color: white;
+            border: none;
+            padding: 14px 50px;
+            font-size: 22px;
+            font-weight: 900;
+            border-radius: 30px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 5px 20px rgba(255,51,102,0.5);
+            margin-top: 10px;
+        }
+        button.start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 30px rgba(255,51,102,0.7);
+        }
+        .msg-text {
+            font-size: 42px;
+            font-weight: 900;
+            text-transform: uppercase;
+            text-shadow: 0 0 25px rgba(255,255,255,0.6);
+            text-align: center;
+        }
+        .controls-hint {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+            text-align: center;
+            line-height: 1.6;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+        
+        <!-- HUD Overlay Layer -->
+        <div class="ui-layer">
+            <div class="hud">
+                <!-- Player 1 Panel -->
+                <div class="player-panel p1-panel">
+                    <div class="name" id="p1-name">Gojo</div>
+                    <div class="bar-container"><div class="health-bar" id="p1-health"></div></div>
+                    <div class="cooldown-indicator" id="p1-air-cd"></div>
+                    <div class="rounds" id="p1-rounds">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+                
+                <!-- Player 2 Panel (AI) -->
+                <div class="player-panel p2-panel">
+                    <div class="name" id="p2-name">AI</div>
+                    <div class="bar-container"><div class="health-bar" id="p2-health"></div></div>
+                    <div class="cooldown-indicator" id="p2-air-cd"></div>
+                    <div class="rounds" id="p2-rounds">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setup/Selection Screen -->
+        <div class="screen" id="setup-screen">
+            <h1>Anime Stickman Showdown</h1>
+            <h2>Select Fighter</h2>
+            <div class="grid" id="char-grid">
+                <div class="card selected" data-char="gojo">GOJO</div>
+                <div class="card" data-char="asta">ASTA</div>
+                <div class="card" data-char="yuno">YUNO</div>
+                <div class="card" data-char="sukuna">SUKUNA</div>
+            </div>
+
+            <h2>Select Arena</h2>
+            <div class="grid" id="stage-grid">
+                <div class="card selected" data-stage="dojo">DOJO</div>
+                <div class="card" data-stage="cyber">CYBERPUNK</div>
+                <div class="card" data-stage="ruins">RUINS</div>
+            </div>
+
+            <button class="start-btn" id="start-btn">Fight</button>
+            <div class="controls-hint">
+                A / D = Move Left/Right | W = Jump (Double Jump supported!)<br>
+                J = Light Punch/Air Strike | K = Heavy Kick/Air Dive | L = Ultimate Form (Only active when Health &lt; 35%)
+            </div>
+        </div>
+
+        <!-- Round Over Overlay Screen -->
+        <div class="screen hidden" id="round-screen">
+            <div class="msg-text" id="round-msg">Round 1 Won!</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Global Parameters & Selections
+        let selectedChar = 'gojo';
+        let selectedStage = 'dojo';
+        let gameState = 'setup'; 
+        
+        let p1Score = 0;
+        let p2Score = 0;
+        let screenShake = 0;
+
+        const keys = { a: false, d: false, w: false };
+
+        let particles = [];
+        let projectiles = [];
+        let ghosts = [];
+
+        // UI Click Event Listeners
+        document.getElementById('char-grid').addEventListener('click', (e) => {
+            if(!e.target.classList.contains('card')) return;
+            document.querySelectorAll('#char-grid .card').forEach(c => c.classList.remove('selected'));
+            e.target.classList.add('selected');
+            selectedChar = e.target.dataset.char;
+        });
+
+        document.getElementById('stage-grid').addEventListener('click', (e) => {
+            if(!e.target.classList.contains('card')) return;
+            document.querySelectorAll('#stage-grid .card').forEach(c => c.classList.remove('selected'));
+            e.target.classList.add('selected');
+            selectedStage = e.target.dataset.stage;
+        });
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            p1Score = 0;
+            p2Score = 0;
+            updateRoundDots();
+            document.getElementById('setup-screen').classList.add('hidden');
