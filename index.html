@@ -302,3 +302,477 @@
             p2Score = 0;
             updateRoundDots();
             document.getElementById('setup-screen').classList.add('hidden');
+            initMatch();
+        });
+
+// Controller Engine
+window.addEventListener('keydown', (e) => {
+const k = e.key.toLowerCase();
+if(gameState !== 'playing') return;
+if(k === 'a') keys.a = true;
+if(k === 'd') keys.d = true;
+if(k === 'w') p1.jump();
+if(k === 'j') p1.attack('light');
+if(k === 'k') p1.attack('heavy');
+if(k === 'l') p1.useUltimate();
+});
+window.addEventListener('keyup', (e) => {
+const k = e.key.toLowerCase();
+if(k === 'a') keys.a = false;
+if(k === 'd') keys.d = false;
+});
+// Ambient Stage System
+function drawBackground() {
+ctx.save();
+if (selectedStage === 'dojo') {
+ctx.fillStyle = '#22140d'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.fillStyle = '#cc9966'; ctx.fillRect(0, 400, canvas.width, 100); // Floor mat
+ctx.fillStyle = '#7a431d'; ctx.fillRect(0, 396, canvas.width, 4);
+if(Math.random() < 0.08) spawnEnvParticle('#ffb3d1', 1, 2); // Petals
+} else if (selectedStage === 'cyber') {
+ctx.fillStyle = '#06060c'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.strokeStyle = '#00ffcc'; ctx.globalAlpha = 0.15;
+for(let i=0; i<canvas.width; i+=50) {
+ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+}
+ctx.globalAlpha = 1.0;
+ctx.fillStyle = '#12121f'; ctx.fillRect(0, 400, canvas.width, 100);
+ctx.fillStyle = '#ff0055'; ctx.fillRect(0, 397, canvas.width, 3);
+if(Math.random() < 0.1) spawnEnvParticle('#00ffff', 2, 4); // Sparks
+} else if (selectedStage === 'ruins') {
+ctx.fillStyle = '#141416'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.fillStyle = '#2a2a30'; ctx.fillRect(120, 180, 40, 220); ctx.fillRect(640, 130, 45, 270);
+ctx.fillStyle = '#33333c'; ctx.fillRect(0, 400, canvas.width, 100);
+if(Math.random() < 0.08) spawnEnvParticle('#ff5500', 1.5, 3); // Embers
+}
+ctx.restore();
+}
+function spawnEnvParticle(color, size, maxV) {
+particles.push({
+type: 'env', x: Math.random() * canvas.width, y: -10,
+vx: (Math.random() - 0.4) * maxV, vy: Math.random() * 2 + 1,
+color: color, size: size, life: 300
+});
+}
+// Particle Bursts
+function spawnBurst(x, y, color, count=12) {
+for(let i=0; i<count; i++) {
+let angle = Math.random() * Math.PI * 2;
+let speed = Math.random() * 5 + 2;
+particles.push({
+type: 'combat', x: x, y: y,
+vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
+color: color, size: Math.random()*3+2, life: 25, maxLife: 25
+});
+}
+}
+// Projectile Entities Matrix
+class Projectile {
+constructor(x, y, dir, type, owner) {
+this.x = x; this.y = y; this.dir = dir; this.type = type; this.owner = owner;
+this.vx = type === 'purple' ? 5.5 * dir : 9 * dir;
+this.vy = 0;
+this.size = type === 'purple' ? 40 : (type==='vortex'? 70 : 25);
+this.damage = type === 'purple' ? 24 : (type==='vortex'? 0.8 : 12);
+this.color = type==='purple'?'#a347ff':(type==='anti-magic'?'#cc0022':(type==='wind'?'#55ff99':'#ff4400'));
+}
+update() {
+this.x += this.vx;
+this.y += this.vy;
+// Track visual custom trail generation
+if(Math.random() * 1 > 0.3) {
+particles.push({
+type: 'combat', x: this.x, y: this.y + (Math.random()*20-10),
+vx: -this.dir * 1, vy: (Math.random()-0.5)2,
+color: this.color, size: this.size/4, life: 15, maxLife: 15
+});
+}
+}
+draw() {
+ctx.save();
+ctx.fillStyle = this.color;
+ctx.shadowBlur = this.type==='purple'? 25 : 12;
+ctx.shadowColor = this.color;
+ctx.beginPath();
+ctx.arc(this.x, this.y, this.size, 0, Math.PI2);
+ctx.fill();
+ctx.restore();
+}
+}
+// Fighter Framework
+class Fighter {
+constructor(x, side, type, isAI) {
+this.startX = x; this.x = x; this.y = 400;
+this.side = side; this.type = type; this.isAI = isAI;
+this.health = 100;
+this.vx = 0; this.vy = 0;
+this.gravity = 0.5;
+this.isGrounded = true;
+this.jumpCount = 0;
+// Frame animations state values
+this.animTimer = 0;
+this.isDashing = false;
+// General global weapon cooldown counters
+this.globalCooldown = 0;
+this.airAttackCooldown = 0; // The 5-second mandatory mechanic lockout
+this.ultActive = false;
+this.ultTimer = 0;
+this.attackTimer = 0;
+this.attackType = null;
+}
+reset() {
+this.x = this.startX; this.y = 400; this.health = 100;
+this.vx = 0; this.vy = 0; this.isGrounded = true; this.jumpCount = 0;
+this.globalCooldown = 0; this.airAttackCooldown = 0;
+this.ultActive = false; this.ultTimer = 0; this.attackTimer = 0;
+}
+jump() {
+if(this.globalCooldown > 0) return;
+if(this.isGrounded) {
+this.vy = -11; this.isGrounded = false; this.jumpCount = 1;
+} else if(this.jumpCount < 2) {
+this.vy = -10; this.jumpCount = 2; // Trigger double jump rotation flip
+spawnBurst(this.x, this.y, '#ffffff', 6);
+}
+}
+attack(kind) {
+if(this.globalCooldown > 0 || this.attackTimer > 0) return;
+// Enforce strict 5 second lockout conditions specifically on mid-air triggers
+if(!this.isGrounded && this.airAttackCooldown > 0) return;
+this.attackType = kind;
+this.attackTimer = kind === 'light' ? 14 : 22;
+this.globalCooldown = kind === 'light' ? 15 : 25; // Introduce global frame locks
+let target = this.isAI ? p1 : p2;
+if(!this.isGrounded) {
+// Lock aerial cooldown parameter instantly on trigger
+this.airAttackCooldown = 300; // 300 ticks equals exactly 5 seconds at 60fps
+if(kind === 'heavy') {
+// Slam execution downwards vector
+this.vy = 12;
+this.vx = 6 * this.side;
+}
+// Aerial standard sweep impact calculation
+if(Math.abs(this.x - target.x) < 70 && Math.abs(this.y - target.y) < 70) {
+target.takeDamage(2.5, this.side * 5); // Normalized low base damage values
+spawnBurst(target.x, target.y - 30, '#ffcc00', 8);
+screenShake = 4;
+}
+return;
+}
+// Standard Ground Attack Hit Calculation Profiles
+let reach = kind === 'light' ? 50 : 75;
+if(Math.abs((this.x + reach*this.side) - target.x) < 45 && Math.abs(this.y - target.y) < 45) {
+let dmg = kind === 'light' ? 1.5 : 3.5; // Low scaling damage values
+target.takeDamage(dmg, kind === 'heavy' ? this.side * 14 : this.side * 4);
+let col = this.type==='gojo'?'#99ccff':(this.type==='asta'?'#333':(this.type==='yuno'?'#a3ffa3':'#ff3333'));
+spawnBurst(target.x, target.y - 30, col, 10);
+screenShake = kind === 'heavy' ? 6 : 2;
+}
+}
+useUltimate() {
+// Must be safely underneath the low health threshold of 35%
+if(this.health > 35 || this.globalCooldown > 0) return;
+this.globalCooldown = 90; // Large lockout penalty
+if(this.type === 'gojo') {
+// Big Fusion Cinematic Purple Sphere
+projectiles.push(new Projectile(this.x + 40*this.side, this.y - 35, this.side, 'purple', this));
+screenShake = 18;
+spawnBurst(this.x, this.y-35, '#9933ff', 30);
+}
+else if(this.type === 'asta') {
+// Black Meteorite Homing Charge Rush
+let target = this.isAI ? p1 : p2;
+this.ultActive = true;
+this.ultTimer = 25; // Dynamic charge execution lifespan window
+let angle = Math.atan2((target.y - 30) - (this.y - 30), target.x - this.x);
+this.vx = Math.cos(angle) * 22;
+this.vy = Math.sin(angle) * 22;
+screenShake = 12;
+}
+else if(this.type === 'yuno') {
+// Summon Spirit Storm tornado entity zone directly in place
+let storm = new Projectile(this.x, this.y - 40, this.side, 'vortex', this);
+storm.vx = 0; // Stays fixed
+projectiles.push(storm);
+this.ultActive = true;
+this.ultTimer = 60; // 1 second vortex tick life
+screenShake = 10;
+}
+else if(this.type === 'sukuna') {
+// Domain Expansion Malevolent Shrine slashing storm activation
+this.ultActive = true;
+this.ultTimer = 80;
+screenShake = 15;
+}
+}
+box(amt, kb) {
+// Compatibility mapping
+this.takeDamage(amt, kb);
+}
+takeDamage(amt, kb) {
+this.health = Math.max(0, this.health - amt);
+this.vx += kb;
+}
+update() {
+// Decay frames
+if(this.globalCooldown > 0) this.globalCooldown--;
+if(this.attackTimer > 0) this.attackTimer--;
+if(this.airAttackCooldown > 0) this.airAttackCooldown--;
+// Apply continuous running speed ghost trails
+this.animTimer++;
+this.isDashing = Math.abs(this.vx) > 1.5 && this.isGrounded;
+if(this.isDashing && this.animTimer % 4 === 0) {
+ghosts.push({ x: this.x, y: this.y, joints: this.getJointPositions(), alpha: 0.4, color: this.type });
+}
+// Gravity implementation
+this.y += this.vy;
+this.x += this.vx;
+this.vx *= 0.82;
+if(!this.isGrounded) {
+this.vy += this.gravity;
+if(this.y >= 400) {
+this.y = 400; this.vy = 0; this.isGrounded = true; this.jumpCount = 0;
+}
+}
+// Stage edge enforcement boundaries
+if(this.x < 30) this.x = 30;
+if(this.x > canvas.width - 30) this.x = canvas.width - 30;
+// Execute continuous tick tracking updates on unique active specials
+if(this.ultActive) {
+this.ultTimer--;
+let target = this.isAI ? p1 : p2;
+if(this.type === 'asta') {
+// Continuous hitbox checks during homing charge sequence
+if(Math.abs(this.x - target.x) < 50 && Math.abs(this.y - target.y) < 50) {
+target.takeDamage(12, this.side * 18); // Scaled safe ult damage
+spawnBurst(target.x, target.y - 30, '#ff1a1a', 20);
+this.ultActive = false;
+}
+}
+else if(this.type === 'yuno') {
+// Tick dynamic cyclone pulls on nearby targets
+let dx = this.x - target.x;
+if(Math.abs(dx) < 120) {
+target.vx += dx > 0 ? 0.8 : -0.8; // Vacuum draw gravity
+target.takeDamage(0.18, 0);
+if(Math.random() < 0.2) spawnBurst(target.x, target.y - 30, '#66ffb2', 4);
+}
+}
+else if(this.type === 'sukuna') {
+// Invisible dome slashing storm execution logic
+let dist = Math.abs(this.x - target.x);
+if(dist < 160) {
+target.takeDamage(0.15, (Math.random() - 0.5) * 4);
+if(this.ultTimer % 4 === 0) {
+spawnBurst(target.x + (Math.random()*40-20), target.y - Math.random()*50, '#ff3333', 3);
+}
+}
+}
+if(this.ultTimer <= 0) this.ultActive = false;
+}
+// AI Automation Decisions
+if(this.isAI && gameState === 'playing') {
+let target = p1;
+let distance = target.x - this.x;
+this.side = distance > 0 ? 1 : -1;
+// Standard positioning trackers
+if(Math.abs(distance) > 65) {
+this.vx += 0.8 * this.side;
+} else {
+if(Math.random() < 0.06) {
+Math.random() > 0.25 ? this.attack('light') : this.attack('heavy');
+}
+}
+// Strategic double-jump air counter maneuvers
+if(!target.isGrounded && Math.random() < 0.02 && this.isGrounded) {
+this.jump();
+if(Math.random() > 0.5) this.jump();
+}
+// Smart Low Health Desperation Ultimate activation check profile
+if(this.health <= 35 && Math.random() < 0.03) {
+this.useUltimate();
+}
+}
+}
+// Extract real-time relative rendering tracking calculations for motion trailing profiles
+getJointPositions() {
+let isFlipping = !this.isGrounded && this.jumpCount === 2;
+let rot = isFlipping ? (this.animTimer * 0.25) : 0;
+return { rot: rot, side: this.side, attackTimer: this.attackTimer, jumpCount: this.jumpCount, isGrounded: this.isGrounded };
+}
+draw() {
+ctx.save();
+ctx.lineWidth = 4; ctx.lineCap = 'round';
+let color = '#fff';
+if(this.type === 'gojo') color = '#b3d1ff';
+if(this.type === 'asta') color = '#8c8c8c';
+if(this.type === 'yuno') color = '#a3ffa3';
+if(this.type === 'sukuna') color = '#ffb3d1';
+ctx.strokeStyle = color;
+ctx.translate(this.x, this.y);
+let state = this.getJointPositions();
+if(state.rot !== 0) ctx.rotate(state.rot);
+// Render Base Aesthetics
+// Head
+ctx.beginPath(); ctx.arc(0, -55, 9, 0, Math.PI*2); ctx.stroke();
+// Custom Unique Overlays
+if(this.type === 'gojo') {
+ctx.fillStyle = '#fff'; ctx.fillRect(-7, -67, 14, 5); // Hair
+ctx.fillStyle = '#111'; ctx.fillRect(-6, -58, 12, 3); // Blindfold
+} else if(this.type === 'sukuna') {
+ctx.fillStyle = '#ff9999'; ctx.fillRect(-6, -67, 12, 4); // Spiky pink hair
+}
+// Torso Core Frame Line
+ctx.beginPath(); ctx.moveTo(0, -46); ctx.lineTo(0, -22); ctx.stroke();
+// Action Frame Arms
+ctx.beginPath();
+if(state.attackTimer > 0) {
+ctx.moveTo(0, -40); ctx.lineTo(32 * state.side, -42);
+} else {
+ctx.moveTo(0, -40); ctx.lineTo(-10 * state.side, -26);
+ctx.moveTo(0, -40); ctx.lineTo(10 * state.side, -26);
+}
+ctx.stroke();
+// Massive Swords Attacks
+if(this.type === 'asta') {
+ctx.save(); ctx.lineWidth = 5; ctx.strokeStyle = '#333';
+ctx.beginPath(); ctx.moveTo(4 * state.side, -35);
+ctx.lineTo((state.attackTimer > 0 ? 45 : 24)*state.side, state.attackTimer > 0 ? -46 : -56);
+ctx.stroke(); ctx.restore();
+}
+// Legs Frame Lines
+ctx.beginPath();
+if(!state.isGrounded) {
+ctx.moveTo(0, -22); ctx.lineTo(-8, -8);
+ctx.moveTo(0, -22); ctx.lineTo(8, -8);
+} else {
+ctx.moveTo(0, -22); ctx.lineTo(-11, 0);
+ctx.moveTo(0, -22); ctx.lineTo(11, 0);
+}
+ctx.stroke();
+// Draw Sukuna's Domain Overlay Radius visually if operational
+if(this.type === 'sukuna' && this.ultActive) {
+ctx.restore(); ctx.save();
+ctx.strokeStyle = 'rgba(255,51,51,0.25)'; ctx.lineWidth = 2;
+ctx.fillStyle = 'rgba(255,0,0,0.03)';
+ctx.beginPath(); ctx.arc(this.x, this.y - 30, 160, 0, Math.PI*2);
+ctx.fill(); ctx.stroke();
+}
+ctx.restore();
+}
+}
+// Match Lifecycle Vectors
+let p1 = new Fighter(200, 1, 'gojo', false);
+let p2 = new Fighter(600, -1, 'asta', true);
+function initMatch() {
+p1 = new Fighter(200, 1, selectedChar, false);
+let pool = ['gojo', 'asta', 'yuno', 'sukuna'].filter(c => c !== selectedChar);
+let aiChar = pool[Math.floor(Math.random() * pool.length)];
+p2 = new Fighter(600, -1, aiChar, true);
+document.getElementById('p1-name').innerText = selectedChar;
+document.getElementById('p2-name').innerText = aiChar + " (AI)";
+document.getElementById('p1-health').className = 'health-bar';
+document.getElementById('p2-health').className = 'health-bar';
+p1.reset(); p2.reset();
+projectiles = []; particles = []; ghosts = [];
+gameState = 'playing';
+}
+function updateRoundDots() {
+const d1 = document.getElementById('p1-rounds').children;
+const d2 = document.getElementById('p2-rounds').children;
+for(let i=0; i<2; i++) {
+d1[i].className = i < p1Score ? 'dot won' : 'dot';
+d2[i].className = i < p2Score ? 'dot won' : 'dot';
+}
+}
+function triggerRoundEnd(winner) {
+gameState = 'roundOver';
+if(winner === 1) p1Score++; else p2Score++;
+updateRoundDots();
+let scr = document.getElementById('round-screen');
+let msg = document.getElementById('round-msg');
+scr.classList.remove('hidden');
+if(p1Score === 2 || p2Score === 2) {
+msg.innerText = winner === 1 ? "Victory! Tournament Champion" : "Defeat! AI Conquered the Arena";
+setTimeout(() => {
+scr.classList.add('hidden');
+document.getElementById('setup-screen').classList.remove('hidden');
+gameState = 'setup';
+}, 3000);
+} else {
+msg.innerText = winner === 1 ? "Round Secured!" : "Round Conceded!";
+setTimeout(() => {
+scr.classList.add('hidden');
+initMatch();
+}, 2000);
+}
+}
+// Core Game Tick Engine Loop
+function loop() {
+ctx.save();
+if (screenShake > 0) {
+ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+screenShake *= 0.88;
+if(screenShake < 0.4) screenShake = 0;
+}
+drawBackground();
+if(gameState === 'playing') {
+if(keys.a) { p1.vx -= 0.8; p1.side = -1; }
+if(keys.d) { p1.vx += 0.8; p1.side = 1; }
+}
+// Draw motion trail ghosts silhouettes
+for(let i = ghosts.length - 1; i >= 0; i--) {
+let g = ghosts[i];
+g.alpha -= 0.05;
+if(g.alpha <= 0) { ghosts.splice(i, 1); continue; }
+ctx.save(); ctx.globalAlpha = g.alpha; ctx.lineWidth = 3;
+let c = '#fff';
+if(g.color==='gojo') c='#b3d1ff'; if(g.color==='asta') c='#8c8c8c';
+if(g.color==='yuno') c='#a3ffa3'; if(g.color==='sukuna') c='#ffb3d1';
+ctx.strokeStyle = c; ctx.translate(g.x, g.y);
+if(g.joints.rot !== 0) ctx.rotate(g.joints.rot);
+ctx.beginPath(); ctx.arc(0, -55, 9, 0, Math.PI*2); ctx.moveTo(0, -46); ctx.lineTo(0, -22); ctx.stroke();
+ctx.restore();
+}
+p1.update(); p2.update();
+// Manage Projectiles
+for(let i = projectiles.length - 1; i >= 0; i--) {
+let pr = projectiles[i];
+pr.update(); pr.draw();
+if(pr.x < -100 || pr.x > canvas.width + 100) { projectiles.splice(i, 1); continue; }
+let target = pr.owner === p1 ? p2 : p1;
+if(Math.abs(pr.x - target.x) < (pr.size + 15) && Math.abs(pr.y - (target.y - 30)) < 45) {
+target.takeDamage(pr.damage, pr.dir * (pr.type==='purple'?16:6));
+if(pr.type !== 'vortex') {
+spawnBurst(pr.x, pr.y, pr.color, 18);
+projectiles.splice(i, 1);
+}
+}
+}
+p1.draw(); p2.draw();
+// Manage Particles Systems
+for(let i = particles.length - 1; i >= 0; i--) {
+let pt = particles[i];
+pt.x += pt.vx; pt.y += pt.vy; pt.life--;
+ctx.save();
+ctx.globalAlpha = pt.type === 'env' ? 0.6 : pt.life / pt.maxLife;
+ctx.fillStyle = pt.color;
+ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI*2); ctx.fill();
+ctx.restore();
+if(pt.life <= 0 || pt.y > 420) particles.splice(i, 1);
+}
+ctx.restore();
+// Dashboard UI Updates
+document.getElementById('p1-health').style.width = p1.health + '%';
+document.getElementById('p2-health').style.width = p2.health + '%';
+document.getElementById('p1-health').className = p1.health <= 35 ? 'health-bar low-health' : 'health-bar';
+document.getElementById('p2-health').className = p2.health <= 35 ? 'health-bar low-health' : 'health-bar';
+document.getElementById('p1-air-cd').innerText = p1.airAttackCooldown > 0 ? AIR LOCKED (${Math.ceil(p1.airAttackCooldown / 60)}s) : (p1.health <= 35 ? "ULTIMATE CHARGED (L)" : "READY");
+document.getElementById('p2-air-cd').innerText = p2.airAttackCooldown > 0 ? AIR LOCKED (${Math.ceil(p2.airAttackCooldown / 60)}s) : (p2.health <= 35 ? "ULTIMATE CHARGED" : "READY");
+if(gameState === 'playing') {
+if(p1.health <= 0) triggerRoundEnd(2);
+else if(p2.health <= 0) triggerRoundEnd(1);
+}
+requestAnimationFrame(loop);
+}
+loop();
