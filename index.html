@@ -3,74 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Stickman Showdown</title>
+    <title>Anime Stickman Showdown - Premium Build</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { 
-            background: #0a0a12; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #05050a; 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
             color: #fff; 
             overflow: hidden;
             display: flex; justify-content: center; align-items: center; height: 100vh;
         }
         #game-container {
             width: 800px; height: 500px;
-            background: #11111d;
-            border: 4px solid #32325d;
-            border-radius: 12px;
+            background: #0b0b14;
+            border: 4px solid #1a1a2e;
+            border-radius: 16px;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.7);
         }
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px; transition: opacity 0.3s ease;
+            padding: 20px; transition: opacity 0.3s ease; z-index: 5;
         }
         .hidden { display: none !important; opacity: 0; }
-        h1 { font-size: 2.5rem; text-shadow: 0 0 10px #7209b7; margin-bottom: 20px; color: #f72585; text-transform: uppercase; letter-spacing: 2px;}
-        h2 { font-size: 1.5rem; margin-bottom: 20px; color: #4cc9f0; }
+        h1 { font-size: 2.3rem; text-shadow: 0 0 15px rgba(247, 37, 133, 0.4); margin-bottom: 25px; color: #fff; text-transform: uppercase; letter-spacing: 3px;}
         
-        /* Grid Layouts */
-        .grid { display: flex; gap: 20px; justify-content: center; margin-bottom: 30px; }
+        /* Layouts */
+        .grid { display: flex; gap: 15px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; max-width: 650px; }
         .card {
-            background: #1e1e2f; border: 2px solid #3d3d5c; border-radius: 8px;
-            padding: 15px 25px; cursor: pointer; text-align: center; font-weight: bold;
-            transition: all 0.2s ease; min-width: 140px;
+            background: #121224; border: 2px solid #252542; border-radius: 10px;
+            padding: 12px 20px; cursor: pointer; text-align: center; font-weight: bold;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); min-width: 130px;
+            color: #9999bb; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem;
         }
-        .card:hover { border-color: #f72585; transform: translateY(-3px); background: #25253b; }
-        .card.selected { border-color: #4cc9f0; background: #32325d; box-shadow: 0 0 15px rgba(76,201,240,0.4); }
+        .card:hover { border-color: #f72585; transform: translateY(-2px); background: #191932; color: #fff; }
+        .card.selected { border-color: #4cc9f0; background: #24244d; color: #fff; box-shadow: 0 0 15px rgba(76,201,240,0.3); }
         
-        /* UI Buttons */
+        /* Action Buttons */
         .btn {
-            background: linear-gradient(45deg, #7209b7, #f72585); color: white;
-            border: none; padding: 12px 35px; font-size: 1.2rem; font-weight: bold;
-            border-radius: 30px; cursor: pointer; box-shadow: 0 5px 15px rgba(247,37,133,0.3);
-            transition: all 0.2s ease; text-transform: uppercase;
+            background: linear-gradient(135deg, #7209b7, #f72585); color: white;
+            border: none; padding: 14px 40px; font-size: 1.1rem; font-weight: bold;
+            border-radius: 30px; cursor: pointer; box-shadow: 0 6px 20px rgba(247,37,133,0.3);
+            transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 1px;
         }
-        .btn:hover { transform: scale(1.05); box-shadow: 0 5px 25px rgba(247,37,133,0.5); }
+        .btn:hover { transform: scale(1.04); box-shadow: 0 6px 30px rgba(247,37,133,0.5); }
         
-        /* HUD Layout */
+        /* HUD Grid */
         #hud {
-            position: absolute; top: 0; left: 0; width: 100%; padding: 15px;
+            position: absolute; top: 0; left: 0; width: 100%; padding: 20px 25px;
             display: flex; justify-content: space-between; z-index: 10;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
         }
-        .health-container { width: 42%; display: flex; flex-direction: column; }
+        .health-container { width: 40%; display: flex; flex-direction: column; }
         .p2-align { align-items: flex-end; text-align: right; }
-        .fighter-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; text-shadow: 1px 1px 3px black; }
-        .bar-outer { width: 100%; height: 20px; background: #222; border: 1px solid #444; border-radius: 4px; overflow: hidden; position: relative; }
-        .bar-inner { width: 100%; height: 100%; background: #4cc9f0; transition: width 0.1s linear; }
-        #p2-health { background: #f72585; }
-        .status-txt { font-size: 0.8rem; margin-top: 3px; color: #aaa; }
-        .vs-circle { width: 40px; height: 40px; background: #32325d; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid #fff; font-size: 0.9rem;}
+        .fighter-name { font-weight: 800; font-size: 1.2rem; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+        .bar-outer { width: 100%; height: 16px; background: #111; border: 1px solid #333; border-radius: 20px; overflow: hidden; position: relative; }
+        .bar-inner { width: 100%; height: 100%; background: linear-gradient(90deg, #4cc9f0, #4361ee); transition: width 0.1s ease-out; }
+        #p2-health { background: linear-gradient(90deg, #f72585, #b5179e); }
+        .status-txt { font-size: 0.8rem; margin-top: 5px; color: #8888aa; font-family: monospace; }
+        .vs-circle { width: 38px; height: 38px; background: #121224; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 2px solid #252542; font-size: 0.8rem; color: #f72585;}
         
-        /* Combat Canvas Context */
-        canvas { background: #151522; width: 100%; height: 100%; display: block; }
+        /* Gameplay Elements */
+        canvas { background: #080811; width: 100%; height: 100%; display: block; }
         #ult-banner {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            font-size: 2rem; font-weight: 900; font-style: italic; color: #fff;
-            text-shadow: 0 0 20px #000; letter-spacing: 2px; text-transform: uppercase; z-index: 20;
+            position: absolute; top: 35px; left: 50%; transform: translateX(-50%);
+            font-size: 1.8rem; font-weight: 900; font-style: italic; color: #fff;
+            letter-spacing: 3px; text-transform: uppercase; z-index: 20;
+            text-align: center; width: 100%; pointer-events: none;
         }
     </style>
 </head>
@@ -78,7 +79,7 @@
 
 <div id="game-container">
     
-    <!-- STAGE SCREEN -->
+    <!-- STAGE SELECTION SCREEN -->
     <div id="screen-stage" class="screen">
         <h1>Select Battleground</h1>
         <div class="grid">
@@ -89,10 +90,10 @@
         <button id="btn-stage-next" class="btn hidden" onclick="goToCharacterScreen()">Next</button>
     </div>
 
-    <!-- CHARACTER SCREEN -->
+    <!-- CHARACTER SELECTION SCREEN -->
     <div id="screen-char" class="screen hidden">
-        <h1>Choose Your Fighter</h1>
-        <div class="grid" style="flex-wrap: wrap; max-width: 600px;">
+        <h1>Choose Your Champion</h1>
+        <div class="grid">
             <div class="card" onclick="selectFighter('Asta')">Asta</div>
             <div class="card" onclick="selectFighter('Yuno')">Yuno</div>
             <div class="card" onclick="selectFighter('Gojo')">Gojo</div>
@@ -103,18 +104,18 @@
             <div class="card" onclick="selectFighter('Naruto')">Naruto</div>
             <div class="card" onclick="selectFighter('Luffy')">Luffy</div>
         </div>
-        <button id="btn-char-start" class="btn hidden" onclick="startMatch()">Battle</button>
+        <button id="btn-char-start" class="btn hidden" onclick="startMatch()">Commence Battle</button>
     </div>
 
-    <!-- LOADING SCREEN -->
+    <!-- LOADING HUB SCREEN -->
     <div id="screen-loading" class="screen hidden">
-        <h1 style="animation: pulse 1s infinite alternate;">Loading Match...</h1>
-        <div class="bar-outer" style="width: 300px; height: 10px;">
+        <h1 style="letter-spacing: 6px; color: #4cc9f0;">Generating Arena...</h1>
+        <div class="bar-outer" style="width: 340px; height: 8px; border-radius: 4px;">
             <div id="loading-progress" class="bar-inner" style="width: 0%; background: linear-gradient(90deg, #7209b7, #f72585);"></div>
         </div>
     </div>
 
-    <!-- ARENA SCREEN -->
+    <!-- MAIN GAMEPLAY COMBAT ARENA -->
     <div id="screen-arena" class="screen hidden" style="padding: 0;">
         <div id="hud">
             <div class="health-container">
@@ -136,7 +137,6 @@
 </div>
 
 <script>
-    // Game Management Framework
     let selectedStage = '';
     let selectedFighter = '';
     const roster = ['Asta','Yuno','Gojo','Sukuna','Julius','Noelle','Goku','Naruto','Luffy'];
@@ -147,29 +147,23 @@
     let gameActive = false;
     let timeStopped = false;
     let timeStopTimer = 0;
-    let currentUltLabel = '';
     let globalDim = 0; 
 
-    // Character Entities
     let p1, p2;
     let projectiles = [];
     let particles = [];
 
-    // Controller Input state mapping
+    // Controller input handling maps
     const keys = { a: false, d: false, w: false, j: false, k: false };
     window.addEventListener('keydown', e => {
-        if(e.key === 'a' || e.key === 'A') keys.a = true;
-        if(e.key === 'd' || e.key === 'D') keys.d = true;
-        if(e.key === 'w' || e.key === 'W') keys.w = true;
-        if(e.key === 'j' || e.key === 'J') keys.j = true;
-        if(e.key === 'k' || e.key === 'K') keys.k = true;
+        let k = e.key.toLowerCase();
+        if(k === 'a') keys.a = true; if(k === 'd') keys.d = true; if(k === 'w') keys.w = true;
+        if(k === 'j') keys.j = true; if(k === 'k') keys.k = true;
     });
     window.addEventListener('keyup', e => {
-        if(e.key === 'a' || e.key === 'A') keys.a = false;
-        if(e.key === 'd' || e.key === 'D') keys.d = false;
-        if(e.key === 'w' || e.key === 'W') keys.w = false;
-        if(e.key === 'j' || e.key === 'J') keys.j = false;
-        if(e.key === 'k' || e.key === 'K') keys.k = false;
+        let k = e.key.toLowerCase();
+        if(k === 'a') keys.a = false; if(k === 'd') keys.d = false; if(k === 'w') keys.w = false;
+        if(k === 'j') keys.j = false; if(k === 'k') keys.k = false;
     });
 
     function selectStage(stageName) {
@@ -199,214 +193,192 @@
         
         let progress = 0;
         const interval = setInterval(() => {
-            progress += 5;
-            document.getElementById('loading-progress').style.width = progress + '%';
+            progress += 8;
+            document.getElementById('loading-progress').style.width = Math.min(100, progress) + '%';
             if(progress >= 100) {
                 clearInterval(interval);
                 initArena();
             }
-        }, 100);
+        }, 60);
     }
 
     class Fighter {
         constructor(x, y, name, isCPU) {
             this.x = x; this.y = y; this.name = name; this.isCPU = isCPU;
-            this.w = 30; this.h = 70;
+            this.w = 30; this.h = 74;
             this.hp = 1000; this.maxHp = 1000;
             this.vx = 0; this.vy = 0;
             this.isGrounded = false;
-            this.dir = isCPU ? -1 : 1;
-          this.state = 'idle'; // idle, attacking, hit
+            this.dir = isCPU ? -1 : 1;this.color = this.getCharacterColor();
+this.state = 'idle';
 this.stateTimer = 0;
 this.ultReady = true;
 this.isAwakened = false;
-this.limbOffset = 0; // Dynamic stutter asset for Julius' bubble
+this.limbOffset = 0;
 }
 getCharacterColor() {
-const colors = { Asta:'#3a3a3a', Yuno:'#2ec4b6', Gojo:'#7209b7', Sukuna:'#e63946', Julius:'#ffb703', Noelle:'#00b4d8', Goku:'#ffb703', Naruto:'#f77f00', Luffy:'#d62828' };
-return colors[this.name] || '#fff';
+const colors = { Asta:'#4e5d6c', Yuno:'#a7f3d0', Gojo:'#a2d2ff', Sukuna:'#ff4d6d', Julius:'#f9c74f', Noelle:'#4cc9f0', Goku:'#f9844a', Naruto:'#f9c74f', Luffy:'#f94144' };
+return colors[this.name] || '#ffffff';
 }
 update() {
-// Apply environmental physics vectors
-this.vy += 0.6; // Gravity vector
+this.vy += 0.55;
 this.x += this.vx;
 this.y += this.vy;
-this.vx *= 0.8; // Inertial dampening Friction
-if (this.y >= 400) {
-this.y = 400; this.vy = 0; this.isGrounded = true;
-}
-// Boundary Constraint management
-if (this.x < 20) { this.x = 20; spawnShockwave(this.x, this.y + 35); }
-if (this.x > 750) { this.x = 750; spawnShockwave(this.x, this.y + 35); }
-// Awakening State Management Trigger Matrix (Sub-300 HP thresholds)
+this.vx *= 0.82;
+if (this.y >= 395) { this.y = 395; this.vy = 0; this.isGrounded = true; }
+if (this.x < 15) this.x = 15;
+if (this.x > 755) this.x = 755;
 if (this.hp < 300 && !this.isAwakened) {
 this.isAwakened = true;
-createImpactBurst(this.x, this.y + 35, this.color, 30);
+createImpactBurst(this.x, this.y + 35, this.color, 35);
 }
 if (this.stateTimer > 0) {
 this.stateTimer--;
 if (this.stateTimer === 0) this.state = 'idle';
 }
-// Limb Stutter simulation matrix for Julius context
 if (timeStopped && this.isCPU) {
-this.limbOffset = Math.sin(Date.now() * 0.05) * 5;
+this.limbOffset = Math.sin(Date.now() * 0.06) * 6;
 } else {
 this.limbOffset = 0;
 }
 }
+// Custom Individual Renderer Configs to Redo Unique Looks per User Prompt
 draw() {
 ctx.save();
 ctx.translate(this.x + this.w/2, this.y + this.h/2);
-// Awakening Engine Aura Emission
 if (this.isAwakened) {
-ctx.shadowBlur = 20;
-ctx.shadowColor = this.color;
-ctx.strokeStyle = this.color;
-ctx.lineWidth = 4;
-ctx.beginPath();
-ctx.arc(0, 0, 45, 0, Math.PI*2);
-ctx.stroke();
+ctx.shadowBlur = 25; ctx.shadowColor = this.color;
+ctx.strokeStyle = this.color; ctx.lineWidth = 3;
+ctx.beginPath(); ctx.arc(0, 5, 48, 0, Math.PI*2); ctx.stroke();
 }
-// Baseline Proportional Render Engine (Stickman Configuration)
-ctx.strokeStyle = '#ffffff';
-ctx.lineWidth = 4;
-ctx.lineCap = 'round';
-// Core Head Matrix
-ctx.beginPath();
-ctx.arc(0, -20, 10, 0, Math.PI * 2);
-ctx.stroke();
-// Unique Visual Accessories per User Instructions
-if (this.name === 'Goku' && this.isAwakened) { // Super Saiyan Aura Variant Override
-ctx.fillStyle = '#ffeb3b';
-ctx.beginPath(); ctx.moveTo(-8, -28); ctx.lineTo(0, -42); ctx.lineTo(8, -28); ctx.fill();
-}
-if (this.name === 'Luffy') { // Straw Hat
-ctx.fillStyle = '#e9c46a'; ctx.fillRect(-12, -32, 24, 4);
-ctx.fillStyle = '#e63946'; ctx.fillRect(-8, -35, 16, 3);
-}
-// Core Spine Torso Configuration
-ctx.beginPath();
-ctx.moveTo(0, -10);
-ctx.lineTo(0, 15);
-ctx.stroke();
-// Upper Appendage Execution Vector Configuration
-let leftArmY = this.state === 'attacking' ? -5 : 5;
-let rightArmY = this.state === 'attacking' ? -5 : 5;
-ctx.beginPath();
-// Left Arm
-ctx.moveTo(0, -5);
-ctx.lineTo(-15 + this.limbOffset, leftArmY);
-ctx.stroke();
-// Right Arm
-ctx.moveTo(0, -5);
-ctx.lineTo(15 + this.limbOffset, rightArmY);
-ctx.stroke();
-// Lower Appendage Support Matrix
-ctx.beginPath();
-// Left Leg
-ctx.moveTo(0, 15);
-ctx.lineTo(-12 + this.limbOffset, 35);
-ctx.stroke();
-// Right Leg
-ctx.moveTo(0, 15);
-ctx.lineTo(12 + this.limbOffset, 35);
-ctx.stroke();
-// Character Weapon Custom System Logic Integration
+ctx.lineWidth = 4.5; ctx.lineCap = 'round';
+// 1. DESIGN CUSTOM CLOTHES / BODY SHAPES PER FIGHTER
 if (this.name === 'Asta') {
-ctx.strokeStyle = '#333';
-ctx.lineWidth = 6;
+ctx.strokeStyle = '#444'; // Dark gray color palette
+// Draw a thick black headband asset
+ctx.fillStyle = '#111'; ctx.fillRect(-10, -25, 20, 5);
+} else if (this.name === 'Yuno') {
+ctx.strokeStyle = '#1d3557'; // Deep blue uniform line
+ctx.fillStyle = '#a7f3d0'; // Glowing green pendant
+ctx.beginPath(); ctx.arc(0, -5, 3, 0, Math.PI*2); ctx.fill();
+} else if (this.name === 'Gojo') {
+ctx.strokeStyle = '#240046'; // Dark purple uniform line
+// Draw white blindfold line block
+ctx.fillStyle = '#fff'; ctx.fillRect(-9, -21, 18, 5);
+} else if (this.name === 'Sukuna') {
+ctx.strokeStyle = '#f1faee'; // Light kimono line styling
+// Pink hair spike marks
+ctx.fillStyle = '#ff4d6d'; ctx.fillRect(-8, -32, 16, 4);
+} else if (this.name === 'Julius') {
+ctx.strokeStyle = '#6a040f'; // Royal gold/crimson lines
+ctx.fillStyle = '#f9c74f'; ctx.fillRect(-5, -2, 10, 15);
+} else if (this.name === 'Noelle') {
+ctx.strokeStyle = '#e0f2fe'; // Silver/white silk dress wires
+// Valkyrie armor twin-tails block
+ctx.fillStyle = '#93c5fd'; ctx.fillRect(-14, -20, 4, 12); ctx.fillRect(10, -20, 4, 12);
+} else if (this.name === 'Goku') {
+ctx.strokeStyle = '#f9844a'; // Vibrant orange gi lining
+ctx.fillStyle = this.isAwakened ? '#f9c74f' : '#2b2d42'; // Blue hair vs yellow hair
+ctx.beginPath(); ctx.moveTo(-10, -22); ctx.lineTo(0, -36); ctx.lineTo(10, -22); ctx.fill();
+} else if (this.name === 'Naruto') {
+ctx.strokeStyle = '#f77f00'; // Bright orange track jacket lines
+ctx.fillStyle = '#fcbf49'; // Spiky yellow blonde hair blocks
+ctx.beginPath(); ctx.arc(0, -22, 10, Math.PI, 0); ctx.fill();
+} else if (this.name === 'Luffy') {
+ctx.strokeStyle = '#d62828'; // Red vest line framing
+ctx.fillStyle = '#fcbf49'; // Straw Hat brim mapping
+ctx.fillRect(-14, -24, 28, 4);
+}
+// Head core render
+ctx.beginPath(); ctx.arc(0, -16, 9, 0, Math.PI * 2); ctx.stroke();
+// Spine / Torso lines
+ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(0, 18); ctx.stroke();
+// Dynamic limb animations
+let attackPhase = this.state === 'attacking';
 ctx.beginPath();
-ctx.moveTo(10, -5);
-ctx.lineTo(35 * this.dir, -30);
+ctx.moveTo(0, -2); ctx.lineTo(-16 + this.limbOffset, attackPhase ? -10 : 8);
+ctx.moveTo(0, -2); ctx.lineTo(16 + this.limbOffset, attackPhase ? -4 : 8);
 ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(0, 18); ctx.lineTo(-12 + this.limbOffset, 38);
+ctx.moveTo(0, 18); ctx.lineTo(12 + this.limbOffset, 38);
+ctx.stroke();
+// Distinct Weapon profiles
+if (this.name === 'Asta') {
+ctx.strokeStyle = '#111'; ctx.lineWidth = 7;
+ctx.beginPath(); ctx.moveTo(12, -2); ctx.lineTo(38 * this.dir, -28); ctx.stroke();
 }
 ctx.restore();
 }
 attack() {
 if (this.state !== 'idle') return;
-this.state = 'attacking';
-this.stateTimer = 15;
-// Attack Logic without Circular Shapes
-let hitTarget = this.isCPU ? p1 : p2;
-let range = this.name === 'Asta' || this.name === 'Luffy' ? 120 : 60;
-// Check contact collision vectors
-if (Math.abs(this.x - hitTarget.x) < range && Math.abs(this.y - hitTarget.y) < 50) {
-let damage = this.isAwakened ? 45 : 30;
-hitTarget.hp -= damage;
-hitTarget.state = 'hit';
-hitTarget.stateTimer = 10;
-hitTarget.vx = this.dir * 12; // Physics Impact knockback acceleration vector
-spawnShockwave(hitTarget.x, hitTarget.y + 35);
+this.state = 'attacking'; this.stateTimer = 14;
+let target = this.isCPU ? p1 : p2;
+let range = (this.name === 'Asta' || this.name === 'Luffy') ? 110 : 65;
+if (Math.abs(this.x - target.x) < range && Math.abs(this.y - target.y) < 50) {
+target.hp -= this.isAwakened ? 40 : 25;
+target.state = 'hit'; target.stateTimer = 12;
+target.vx = this.dir * 13;
+spawnShockwave(target.x, target.y + 35);
 }
 }
 useUltimate() {
 if (!this.ultReady) return;
+this.soundTriggerEffect();
 this.ultReady = false;
-currentUltLabel = ${this.name.toUpperCase()}: ${this.getUltName()};
-document.getElementById('ult-banner').innerText = currentUltLabel;
+document.getElementById('ult-banner').innerText = ${this.name.toUpperCase()}: ${this.getUltName()};
 document.getElementById('ult-banner').classList.remove('hidden');
-globalDim = 0.85; // Dim the background arena screen for high-contrast viewing
-// Apply custom slower execution timelines
+globalDim = 0.88;
 setTimeout(() => {
 globalDim = 0;
 document.getElementById('ult-banner').classList.add('hidden');
 if (this.name === 'Julius') {
-timeStopped = true;
-timeStopTimer = 300; // 5 seconds mapped across standard tick framerate (60fps)
+timeStopped = true; timeStopTimer = 300;
 } else {
 projectiles.push({
-x: this.x + (50 * this.dir),
-y: this.y + 20,
-vx: this.dir * 3.5, // Drastically reduced traveling velocity for ultra high-readability
-type: this.name,
-owner: this
+x: this.x + (60 * this.dir), y: this.y + 15,
+vx: this.dir * 3.0, // Retain readability slowdown tracking metrics
+type: this.name, owner: this
 });
 }
-}, 1200); // Expanded freeze-frame pause duration window
+}, 1300);
 }
 getUltName() {
-const ults = { Asta:'Black Meteorite', Yuno:'Spirit Storm', Gojo:'Hollow Purple', Sukuna:'Malevolent Shrine', Julius:'Chrono Anastasis', Noelle:"Sea Dragon's Roar", Goku:'Kamehameha', Naruto:'Rasenshuriken', Luffy:'Elephant Gun' };
+const ults = { Asta:'Black Meteorite Smash', Yuno:'Spirit Storm Vortex', Gojo:'Spatial Distortion Implosion', Sukuna:'Cleave Grid Geometry', Julius:'Chrono Anastasis Bubble', Noelle:"Sea Dragon's Roar Torrent", Goku:'Kamehameha Laser Burst', Naruto:'Rasenshuriken Blade Cloud', Luffy:'Gear 5 Giant Punch' };
 return ults[this.name] || 'Finisher';
+}
+soundTriggerEffect() {
+createImpactBurst(this.x + 15, this.y + 35, this.color, 15);
 }
 }
 function initArena() {
 document.getElementById('screen-loading').classList.add('hidden');
 document.getElementById('screen-arena').classList.remove('hidden');
 document.getElementById('p1-name').innerText = selectedFighter;
-// Allocate randomized CPU rival selection
 let cpuPool = roster.filter(f => f !== selectedFighter);
 let cpuFighter = cpuPool[Math.floor(Math.random() * cpuPool.length)];
 document.getElementById('p2-name').innerText = cpuFighter;
-p1 = new Fighter(150, 400, selectedFighter, false);
-p2 = new Fighter(600, 400, cpuFighter, true);
-projectiles = [];
-particles = [];
-gameActive = true;
+p1 = new Fighter(160, 395, selectedFighter, false);
+p2 = new Fighter(610, 395, cpuFighter, true);
+projectiles = []; particles = []; gameActive = true;
 window.requestAnimationFrame(gameLoop);
 }
 function spawnShockwave(x, y) {
-for(let i=0; i<8; i++) {
+for(let i=0; i<6; i++) {
 particles.push({
-x: x, y: y,
-vx: (Math.random() - 0.5) * 6,
-vy: (Math.random() - 0.5) * 6,
-life: 20, maxLife: 20,
-color: '#fff'
+x: x, y: y, vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 5,
+life: 18, maxLife: 18, color: '#ffffff'
 });
 }
 }
 function createImpactBurst(x, y, color, count) {
 for(let i=0; i<count; i++) {
 particles.push({
-x: x, y: y,
-vx: (Math.random() - 0.5) * 8,
-vy: (Math.random() - 0.5) * 8,
-life: 30, maxLife: 30,
-color: color
+x: x, y: y, vx: (Math.random() - 0.5) * 7, vy: (Math.random() - 0.5) * 7,
+life: 25, maxLife: 25, color: color
 });
 }
 }
-// Engine Core Execution Runtime Loop
 function gameLoop() {
 if (!gameActive) return;
 updateMechanics();
@@ -414,166 +386,149 @@ renderCanvas();
 window.requestAnimationFrame(gameLoop);
 }
 function updateMechanics() {
-// Absolute global temporal tracking states
 if (timeStopped) {
-timeStopTimer--;
-if (timeStopTimer <= 0) timeStopped = false;
+timeStopTimer--; if (timeStopTimer <= 0) timeStopped = false;
 }
-// Entity State Updating Mechanics
 p1.update();
-if (!timeStopped) {
-p2.update();
-} else {
-// Force regular ticks for the processor on P2 during active freeze
-p2.limbOffset = Math.sin(Date.now() * 0.05) * 4;
-}
-// Handle Active User Inputs
+if (!timeStopped) p2.update();
+// Control interface routing definitions
 if (p1.state === 'idle') {
-if (keys.a) { p1.vx = -5; p1.dir = -1; }
-if (keys.d) { p1.vx = 5; p1.dir = 1; }
-if (keys.w && p1.isGrounded) { p1.vy = -14; p1.isGrounded = false; }
+if (keys.a) { p1.vx = -5.5; p1.dir = -1; }
+if (keys.d) { p1.vx = 5.5; p1.dir = 1; }
+if (keys.w && p1.isGrounded) { p1.vy = -14.5; p1.isGrounded = false; }
 if (keys.j) p1.attack();
 if (keys.k) p1.useUltimate();
 }
-// Intelligent CPU Automation Tracking System
+// Automatic CPU simulation runtime parameters
 if (!timeStopped && p2.state === 'idle') {
-let distance = Math.abs(p1.x - p2.x);
+let dist = Math.abs(p1.x - p2.x);
 p2.dir = p1.x < p2.x ? -1 : 1;
-if (distance > 80) {
-p2.vx = p2.dir * 3.5;
-} else {
-if (Math.random() < 0.07) p2.attack();
-}
-// Handle CPU Ultimate executions randomly over runtime loops
+if (dist > 75) p2.vx = p2.dir * 3.8;
+else if (Math.random() < 0.07) p2.attack();
 if (Math.random() < 0.003) p2.useUltimate();
 }
-// Linear Projectile Vector Calculus Engine
+// 2. REDO ALL THE ULTIMATES TO EXTRACT TRULY UNIQUE GEOMETRIC STRUCTURES
 for (let i = projectiles.length - 1; i >= 0; i--) {
-let proj = projectiles[i];
-proj.x += proj.vx;
-// Run target contact analysis metrics
-let target = proj.owner.isCPU ? p1 : p2;
-if (Math.abs(proj.x - target.x) < 40 && Math.abs(proj.y - target.y) < 60) {
-target.hp -= 150; // Ultimate base damage factor configuration
-target.state = 'hit';
-target.stateTimer = 15;
-target.vx = (proj.vx > 0 ? 1 : -1) * 20; // High vector knockback propulsion force
-createImpactBurst(proj.x, proj.y, proj.owner.color, 25);
+let p = projectiles[i];
+p.x += p.vx;
+let target = p.owner.isCPU ? p1 : p2;
+if (Math.abs(p.x - target.x) < 45 && Math.abs(p.y - target.y) < 55) {
+target.hp -= 160; target.state = 'hit'; target.stateTimer = 16;
+target.vx = (p.vx > 0 ? 1 : -1) * 22;
+createImpactBurst(p.x, p.y, p.owner.color, 30);
 projectiles.splice(i, 1);
 continue;
 }
-// Clean garbage extraction cleanup frames
-if (proj.x < -100 || proj.x > 900) {
-projectiles.splice(i, 1);
+if (p.x < -150 || p.x > 950) projectiles.splice(i, 1);
 }
-}
-// Particle lifecycle decay updates
 for (let i = particles.length - 1; i >= 0; i--) {
-let p = particles[i];
-p.x += p.vx;
-p.y += p.vy;
-p.life--;
-if (p.life <= 0) particles.splice(i, 1);
+let pt = particles[i]; pt.x += pt.vx; pt.y += pt.vy; pt.life--;
+if (pt.life <= 0) particles.splice(i, 1);
 }
-// Synchronize Interface HUD State Updates
 document.getElementById('p1-health').style.width = Math.max(0, (p1.hp / p1.maxHp) * 100) + '%';
-document.getElementById('p1-status').innerText = HP: ${Math.max(0, Math.floor(p1.hp))}/1000 ${p1.isAwakened ? '🔥 AWAKENED' : ''};
+document.getElementById('p1-status').innerText = HP: ${Math.max(0, Math.floor(p1.hp))}/1000 ${p1.isAwakened ? '⚡ AWAKENED' : ''};
 document.getElementById('p2-health').style.width = Math.max(0, (p2.hp / p2.maxHp) * 100) + '%';
-document.getElementById('p2-status').innerText = HP: ${Math.max(0, Math.floor(p2.hp))}/1000 ${p2.isAwakened ? '🔥 AWAKENED' : ''};
-// Global Round Termination Conditions and Reset
+document.getElementById('p2-status').innerText = HP: ${Math.max(0, Math.floor(p2.hp))}/1000 ${p2.isAwakened ? '⚡ AWAKENED' : ''};
 if (p1.hp <= 0 || p2.hp <= 0) {
 gameActive = false;
-setTimeout(() => {
-initArena(); // Automated Instant Match Reset System Engine
-}, 1000);
+setTimeout(initArena, 1100); // Trigger instant round loop restart cleanly
 }
 }
 function renderCanvas() {
 ctx.clearRect(0, 0, canvas.width, canvas.height);
-// Stage Environment Background Parallax Engine
+// Stage Environment Background Layout Canvas Sets
 if (selectedStage === 'Shibuya Wasteland') {
-ctx.fillStyle = '#181825'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-ctx.fillStyle = '#2d2d44'; ctx.fillRect(100, 200, 80, 270); ctx.fillRect(450, 150, 120, 320);
+ctx.fillStyle = '#0f0f1a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.fillStyle = '#1c1c30'; ctx.fillRect(80, 220, 90, 250); ctx.fillRect(520, 180, 110, 290);
 } else if (selectedStage === 'Tournament of Power') {
-ctx.fillStyle = '#1c1424'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-ctx.fillStyle = '#4a3b5c'; ctx.beginPath(); ctx.moveTo(0, 470); ctx.lineTo(400, 380); ctx.lineTo(800, 470); ctx.fill();
+ctx.fillStyle = '#150f1c'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.fillStyle = '#3a2d4c'; ctx.beginPath(); ctx.moveTo(0, 470); ctx.lineTo(400, 390); ctx.lineTo(800, 470); ctx.fill();
 } else {
-ctx.fillStyle = '#0f141d'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-ctx.fillStyle = '#223047'; ctx.fillRect(50, 300, 700, 20);
+ctx.fillStyle = '#080d14'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.fillStyle = '#1b263b'; ctx.fillRect(40, 320, 720, 15);
 }
-// Solid Platform Ground Plane Rendering
-ctx.fillStyle = '#0a0a0f';
-ctx.fillRect(0, 470, canvas.width, 30);
-// Render Active Combat Entities
-p1.draw();
-p2.draw();
-// Render Non-Ball Advanced Visual Representation Projectiles
+ctx.fillStyle = '#050508'; ctx.fillRect(0, 465, canvas.width, 35);
+p1.draw(); p2.draw();
+// 3. SEPARATE RENDER STRUCTS PER UNIQUE ULTIMATE ELEMENT
 projectiles.forEach(p => {
 ctx.save();
-ctx.shadowBlur = 15;
-ctx.shadowColor = p.owner.color;
-ctx.strokeStyle = p.owner.color;
-ctx.lineWidth = 4;
-if (p.type === 'Goku') { // Linear Beam Cannon Shape Engine
+ctx.shadowBlur = 20; ctx.shadowColor = p.owner.color;
+ctx.strokeStyle = p.owner.color; ctx.lineWidth = 4;
+if (p.type === 'Goku') {
+// Continuous laser beam layout - no ball structure
 ctx.fillStyle = '#4cc9f0';
-ctx.fillRect(p.x, p.y - 10, p.vx * 35, 25);
-} else if (p.type === 'Naruto') { // Spinning Wind Shuriken Element Architecture
-ctx.translate(p.x, p.y);
-ctx.rotate(Date.now() * 0.02);
+ctx.fillRect(p.x, p.y - 15, p.vx * 40, 30);
+}
+else if (p.type === 'Naruto') {
+// Sharp spinning wind shuriken matrix geometry
+ctx.translate(p.x, p.y); ctx.rotate(Date.now() * 0.025);
 ctx.beginPath();
-for(let i=0; i<4; i++) {
+for(let j=0; j<4; j++) {
 ctx.rotate(Math.PI / 2);
-ctx.lineTo(0, -35); ctx.lineTo(10, -10);
+ctx.lineTo(0, -38); ctx.lineTo(12, -12);
 }
 ctx.closePath(); ctx.stroke();
-} else if (p.type === 'Gojo') { // Spatial Fractal System Layout
+}
+else if (p.type === 'Gojo') {
+// Spatial void cracking line structural matrix
 ctx.beginPath();
-ctx.moveTo(p.x - 20, p.y - 20); ctx.lineTo(p.x + 20, p.y + 20);
-ctx.moveTo(p.x + 20, p.y - 20); ctx.lineTo(p.x - 20, p.y + 20);
-ctx.stroke();
-} else if (p.type === 'Yuno') { // Sharp Crescent Vector Air Trails
-ctx.beginPath();
-ctx.arc(p.x, p.y, 25, -Math.PI/2, Math.PI/2, p.vx < 0);
-ctx.stroke();
-} else if (p.type === 'Luffy') { // Elongated Snapping Fist Model
-ctx.fillStyle = '#fff';
-ctx.fillRect(p.x, p.y, -p.vx * 15, 12);
-} else if (p.type === 'Sukuna') { // Sharp Geometric Grid Cutting Slashes
-ctx.beginPath();
-ctx.moveTo(p.x, p.y - 30); ctx.lineTo(p.x + 15, p.y); ctx.lineTo(p.x - 15, p.y + 30);
-ctx.stroke();
-} else if (p.type === 'Noelle') { // Wavy Sinuous Water Torrent Whip
-ctx.beginPath();
-for(let j=0; j<40; j+=5) {
-ctx.lineTo(p.x + j, p.y + Math.sin(j + Date.now()*0.1)*10);
+for(let d=0; d<6; d++) {
+let ang = (d * Math.PI) / 3;
+ctx.moveTo(p.x, p.y);
+ctx.lineTo(p.x + Math.cos(ang)*35, p.y + Math.sin(ang)*35);
 }
 ctx.stroke();
-} else { // Generic Fallback System shape
-ctx.fillRect(p.x - 15, p.y - 15, 30, 30);
+}
+else if (p.type === 'Yuno') {
+// Large vertical emerald air slice wall
+ctx.beginPath();
+ctx.moveTo(p.x, p.y - 45); ctx.lineTo(p.x, p.y + 45);
+ctx.stroke();
+}
+else if (p.type === 'Luffy') {
+// Massive square block boxing fist
+ctx.fillStyle = '#d62828';
+ctx.fillRect(p.x - 20, p.y - 30, 50, 60);
+}
+else if (p.type === 'Sukuna') {
+// Vertical geometric grid system matrix lines
+ctx.beginPath();
+ctx.moveTo(p.x - 15, p.y - 35); ctx.lineTo(p.x - 15, p.y + 35);
+ctx.moveTo(p.x + 15, p.y - 35); ctx.lineTo(p.x + 15, p.y + 35);
+ctx.moveTo(p.x - 30, p.y); ctx.lineTo(p.x + 30, p.y);
+ctx.stroke();
+}
+else if (p.type === 'Noelle') {
+// Jagged sinuous blue water whip strand lines
+ctx.beginPath();
+ctx.moveTo(p.x, p.y);
+for(let step=0; step<60; step+=8) {
+ctx.lineTo(p.x + step * (p.vx > 0 ? 1 : -1), p.y + Math.sin(step + Date.now()*0.15)*18);
+}
+ctx.stroke();
+}
+else if (p.type === 'Asta') {
+// Giant wide diagonal black cleavage trail
+ctx.strokeStyle = '#222222'; ctx.lineWidth = 12;
+ctx.beginPath();
+ctx.moveTo(p.x - 20 * (p.vx > 0 ? 1 : -1), p.y + 30);
+ctx.lineTo(p.x + 30 * (p.vx > 0 ? 1 : -1), p.y - 30);
+ctx.stroke();
 }
 ctx.restore();
 });
-// Julius Active Time Bubble Distortion Field Overlay Matrix
+// Julius temporal lock grid ring
 if (timeStopped) {
-ctx.fillStyle = 'rgba(76, 201, 240, 0.15)';
-ctx.beginPath();
-ctx.arc(p2.x + 15, p2.y + 35, 120, 0, Math.PI*2);
-ctx.fill();
-ctx.strokeStyle = '#4cc9f0';
-ctx.lineWidth = 2;
-ctx.stroke();
+ctx.fillStyle = 'rgba(249, 199, 79, 0.12)';
+ctx.beginPath(); ctx.arc(p2.x + 15, p2.y + 35, 125, 0, Math.PI*2); ctx.fill();
+ctx.strokeStyle = '#f9c74f'; ctx.lineWidth = 2; ctx.stroke();
 }
-// Particle FX Rendering Stack
-particles.forEach(p => {
-ctx.fillStyle = p.color;
-ctx.globalAlpha = p.life / p.maxLife;
-ctx.fillRect(p.x, p.y, 4, 4);
+particles.forEach(pt => {
+ctx.fillStyle = pt.color;
+ctx.globalAlpha = pt.life / pt.maxLife;
+ctx.fillRect(pt.x, pt.y, 4.5, 4.5);
 ctx.globalAlpha = 1.0;
 });
-// Screen-wide Dynamic Dark Canvas Shifter for Safe High-Contrast Ultimate Rendering
 if (globalDim > 0) {
 ctx.fillStyle = rgba(0, 0, 0, ${globalDim});
 ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-}
-            this.color = this.getCharacterColor();
