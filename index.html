@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Stickman Showdown - Premium Build</title>
+    <title>Anime Stickman Showdown - Complete Edition</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { 
@@ -30,7 +30,7 @@
         .hidden { display: none !important; opacity: 0; }
         h1 { font-size: 2.3rem; text-shadow: 0 0 15px rgba(247, 37, 133, 0.4); margin-bottom: 25px; color: #fff; text-transform: uppercase; letter-spacing: 3px;}
         
-        /* Layouts */
+        /* Grid Layouts */
         .grid { display: flex; gap: 15px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; max-width: 650px; }
         .card {
             background: #121224; border: 2px solid #252542; border-radius: 10px;
@@ -41,7 +41,7 @@
         .card:hover { border-color: #f72585; transform: translateY(-2px); background: #191932; color: #fff; }
         .card.selected { border-color: #4cc9f0; background: #24244d; color: #fff; box-shadow: 0 0 15px rgba(76,201,240,0.3); }
         
-        /* Action Buttons */
+        /* Buttons */
         .btn {
             background: linear-gradient(135deg, #7209b7, #f72585); color: white;
             border: none; padding: 14px 40px; font-size: 1.1rem; font-weight: bold;
@@ -242,7 +242,6 @@ this.limbOffset = Math.sin(Date.now() * 0.06) * 6;
 this.limbOffset = 0;
 }
 }
-// Custom Individual Renderer Configs to Redo Unique Looks per User Prompt
 draw() {
 ctx.save();
 ctx.translate(this.x + this.w/2, this.y + this.h/2);
@@ -252,48 +251,43 @@ ctx.strokeStyle = this.color; ctx.lineWidth = 3;
 ctx.beginPath(); ctx.arc(0, 5, 48, 0, Math.PI*2); ctx.stroke();
 }
 ctx.lineWidth = 4.5; ctx.lineCap = 'round';
-// 1. DESIGN CUSTOM CLOTHES / BODY SHAPES PER FIGHTER
+// Distinct Clothes, Aesthetics, and Body Alterations per Character
 if (this.name === 'Asta') {
-ctx.strokeStyle = '#444'; // Dark gray color palette
-// Draw a thick black headband asset
+ctx.strokeStyle = '#444';
 ctx.fillStyle = '#111'; ctx.fillRect(-10, -25, 20, 5);
 } else if (this.name === 'Yuno') {
-ctx.strokeStyle = '#1d3557'; // Deep blue uniform line
-ctx.fillStyle = '#a7f3d0'; // Glowing green pendant
+ctx.strokeStyle = '#1d3557';
+ctx.fillStyle = '#a7f3d0';
 ctx.beginPath(); ctx.arc(0, -5, 3, 0, Math.PI*2); ctx.fill();
 } else if (this.name === 'Gojo') {
-ctx.strokeStyle = '#240046'; // Dark purple uniform line
-// Draw white blindfold line block
+ctx.strokeStyle = '#240046';
 ctx.fillStyle = '#fff'; ctx.fillRect(-9, -21, 18, 5);
 } else if (this.name === 'Sukuna') {
-ctx.strokeStyle = '#f1faee'; // Light kimono line styling
-// Pink hair spike marks
+ctx.strokeStyle = '#f1faee';
 ctx.fillStyle = '#ff4d6d'; ctx.fillRect(-8, -32, 16, 4);
 } else if (this.name === 'Julius') {
-ctx.strokeStyle = '#6a040f'; // Royal gold/crimson lines
+ctx.strokeStyle = '#6a040f';
 ctx.fillStyle = '#f9c74f'; ctx.fillRect(-5, -2, 10, 15);
 } else if (this.name === 'Noelle') {
-ctx.strokeStyle = '#e0f2fe'; // Silver/white silk dress wires
-// Valkyrie armor twin-tails block
+ctx.strokeStyle = '#e0f2fe';
 ctx.fillStyle = '#93c5fd'; ctx.fillRect(-14, -20, 4, 12); ctx.fillRect(10, -20, 4, 12);
 } else if (this.name === 'Goku') {
-ctx.strokeStyle = '#f9844a'; // Vibrant orange gi lining
-ctx.fillStyle = this.isAwakened ? '#f9c74f' : '#2b2d42'; // Blue hair vs yellow hair
+ctx.strokeStyle = '#f9844a';
+ctx.fillStyle = this.isAwakened ? '#f9c74f' : '#2b2d42';
 ctx.beginPath(); ctx.moveTo(-10, -22); ctx.lineTo(0, -36); ctx.lineTo(10, -22); ctx.fill();
 } else if (this.name === 'Naruto') {
-ctx.strokeStyle = '#f77f00'; // Bright orange track jacket lines
-ctx.fillStyle = '#fcbf49'; // Spiky yellow blonde hair blocks
+ctx.strokeStyle = '#f77f00';
+ctx.fillStyle = '#fcbf49';
 ctx.beginPath(); ctx.arc(0, -22, 10, Math.PI, 0); ctx.fill();
 } else if (this.name === 'Luffy') {
-ctx.strokeStyle = '#d62828'; // Red vest line framing
-ctx.fillStyle = '#fcbf49'; // Straw Hat brim mapping
-ctx.fillRect(-14, -24, 28, 4);
+ctx.strokeStyle = '#d62828';
+ctx.fillStyle = '#fcbf49'; ctx.fillRect(-14, -24, 28, 4);
 }
-// Head core render
+// Head core mesh loop
 ctx.beginPath(); ctx.arc(0, -16, 9, 0, Math.PI * 2); ctx.stroke();
-// Spine / Torso lines
+// Spine / Chest core wire
 ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(0, 18); ctx.stroke();
-// Dynamic limb animations
+// Arms and Leg vectors
 let attackPhase = this.state === 'attacking';
 ctx.beginPath();
 ctx.moveTo(0, -2); ctx.lineTo(-16 + this.limbOffset, attackPhase ? -10 : 8);
@@ -303,7 +297,7 @@ ctx.beginPath();
 ctx.moveTo(0, 18); ctx.lineTo(-12 + this.limbOffset, 38);
 ctx.moveTo(0, 18); ctx.lineTo(12 + this.limbOffset, 38);
 ctx.stroke();
-// Distinct Weapon profiles
+// Distinct Handheld Weapons
 if (this.name === 'Asta') {
 ctx.strokeStyle = '#111'; ctx.lineWidth = 7;
 ctx.beginPath(); ctx.moveTo(12, -2); ctx.lineTo(38 * this.dir, -28); ctx.stroke();
@@ -337,7 +331,7 @@ timeStopped = true; timeStopTimer = 300;
 } else {
 projectiles.push({
 x: this.x + (60 * this.dir), y: this.y + 15,
-vx: this.dir * 3.0, // Retain readability slowdown tracking metrics
+vx: this.dir * 3.0,
 type: this.name, owner: this
 });
 }
@@ -391,7 +385,6 @@ timeStopTimer--; if (timeStopTimer <= 0) timeStopped = false;
 }
 p1.update();
 if (!timeStopped) p2.update();
-// Control interface routing definitions
 if (p1.state === 'idle') {
 if (keys.a) { p1.vx = -5.5; p1.dir = -1; }
 if (keys.d) { p1.vx = 5.5; p1.dir = 1; }
@@ -399,7 +392,6 @@ if (keys.w && p1.isGrounded) { p1.vy = -14.5; p1.isGrounded = false; }
 if (keys.j) p1.attack();
 if (keys.k) p1.useUltimate();
 }
-// Automatic CPU simulation runtime parameters
 if (!timeStopped && p2.state === 'idle') {
 let dist = Math.abs(p1.x - p2.x);
 p2.dir = p1.x < p2.x ? -1 : 1;
@@ -407,7 +399,7 @@ if (dist > 75) p2.vx = p2.dir * 3.8;
 else if (Math.random() < 0.07) p2.attack();
 if (Math.random() < 0.003) p2.useUltimate();
 }
-// 2. REDO ALL THE ULTIMATES TO EXTRACT TRULY UNIQUE GEOMETRIC STRUCTURES
+// Custom Unique Projectile Execution Calculations
 for (let i = projectiles.length - 1; i >= 0; i--) {
 let p = projectiles[i];
 p.x += p.vx;
@@ -431,12 +423,12 @@ document.getElementById('p2-health').style.width = Math.max(0, (p2.hp / p2.maxHp
 document.getElementById('p2-status').innerText = HP: ${Math.max(0, Math.floor(p2.hp))}/1000 ${p2.isAwakened ? '⚡ AWAKENED' : ''};
 if (p1.hp <= 0 || p2.hp <= 0) {
 gameActive = false;
-setTimeout(initArena, 1100); // Trigger instant round loop restart cleanly
+setTimeout(initArena, 1100);
 }
 }
 function renderCanvas() {
 ctx.clearRect(0, 0, canvas.width, canvas.height);
-// Stage Environment Background Layout Canvas Sets
+// Map Selection Environment Layouts
 if (selectedStage === 'Shibuya Wasteland') {
 ctx.fillStyle = '#0f0f1a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
 ctx.fillStyle = '#1c1c30'; ctx.fillRect(80, 220, 90, 250); ctx.fillRect(520, 180, 110, 290);
@@ -449,18 +441,16 @@ ctx.fillStyle = '#1b263b'; ctx.fillRect(40, 320, 720, 15);
 }
 ctx.fillStyle = '#050508'; ctx.fillRect(0, 465, canvas.width, 35);
 p1.draw(); p2.draw();
-// 3. SEPARATE RENDER STRUCTS PER UNIQUE ULTIMATE ELEMENT
+// 9 Entirely Different Geometric Graphics Rendering Blocks for Ultimates
 projectiles.forEach(p => {
 ctx.save();
 ctx.shadowBlur = 20; ctx.shadowColor = p.owner.color;
 ctx.strokeStyle = p.owner.color; ctx.lineWidth = 4;
 if (p.type === 'Goku') {
-// Continuous laser beam layout - no ball structure
 ctx.fillStyle = '#4cc9f0';
 ctx.fillRect(p.x, p.y - 15, p.vx * 40, 30);
 }
 else if (p.type === 'Naruto') {
-// Sharp spinning wind shuriken matrix geometry
 ctx.translate(p.x, p.y); ctx.rotate(Date.now() * 0.025);
 ctx.beginPath();
 for(let j=0; j<4; j++) {
@@ -470,7 +460,6 @@ ctx.lineTo(0, -38); ctx.lineTo(12, -12);
 ctx.closePath(); ctx.stroke();
 }
 else if (p.type === 'Gojo') {
-// Spatial void cracking line structural matrix
 ctx.beginPath();
 for(let d=0; d<6; d++) {
 let ang = (d * Math.PI) / 3;
@@ -480,18 +469,15 @@ ctx.lineTo(p.x + Math.cos(ang)*35, p.y + Math.sin(ang)*35);
 ctx.stroke();
 }
 else if (p.type === 'Yuno') {
-// Large vertical emerald air slice wall
 ctx.beginPath();
 ctx.moveTo(p.x, p.y - 45); ctx.lineTo(p.x, p.y + 45);
 ctx.stroke();
 }
 else if (p.type === 'Luffy') {
-// Massive square block boxing fist
 ctx.fillStyle = '#d62828';
 ctx.fillRect(p.x - 20, p.y - 30, 50, 60);
 }
 else if (p.type === 'Sukuna') {
-// Vertical geometric grid system matrix lines
 ctx.beginPath();
 ctx.moveTo(p.x - 15, p.y - 35); ctx.lineTo(p.x - 15, p.y + 35);
 ctx.moveTo(p.x + 15, p.y - 35); ctx.lineTo(p.x + 15, p.y + 35);
@@ -499,7 +485,6 @@ ctx.moveTo(p.x - 30, p.y); ctx.lineTo(p.x + 30, p.y);
 ctx.stroke();
 }
 else if (p.type === 'Noelle') {
-// Jagged sinuous blue water whip strand lines
 ctx.beginPath();
 ctx.moveTo(p.x, p.y);
 for(let step=0; step<60; step+=8) {
@@ -508,7 +493,6 @@ ctx.lineTo(p.x + step * (p.vx > 0 ? 1 : -1), p.y + Math.sin(step + Date.now()*0.
 ctx.stroke();
 }
 else if (p.type === 'Asta') {
-// Giant wide diagonal black cleavage trail
 ctx.strokeStyle = '#222222'; ctx.lineWidth = 12;
 ctx.beginPath();
 ctx.moveTo(p.x - 20 * (p.vx > 0 ? 1 : -1), p.y + 30);
@@ -517,7 +501,6 @@ ctx.stroke();
 }
 ctx.restore();
 });
-// Julius temporal lock grid ring
 if (timeStopped) {
 ctx.fillStyle = 'rgba(249, 199, 79, 0.12)';
 ctx.beginPath(); ctx.arc(p2.x + 15, p2.y + 35, 125, 0, Math.PI*2); ctx.fill();
@@ -532,3 +515,5 @@ ctx.globalAlpha = 1.0;
 if (globalDim > 0) {
 ctx.fillStyle = rgba(0, 0, 0, ${globalDim});
 ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+}
