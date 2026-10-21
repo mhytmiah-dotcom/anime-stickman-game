@@ -1,2 +1,13 @@
-<button>post</button>
-<p>malchi is cool</p> 
+
+<button id="postBtn">post</button>
+
+<p id="message" style="display: none;">malchi is cool</p>
+
+<script>
+  const button = document.getElementById('postBtn');
+  const text = document.getElementById('message');
+
+  button.addEventListener('click', () => {
+    text.style.display = 'block';
+  });
+</script>
