@@ -49,16 +49,16 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Game Settings
+
 const gravity = 0.6;
 const groundY = 350;
 
-// Keyboard Input State Tracking
+
 const keys = {};
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
 
-// Fighter Class Definition
+
 class Fighter {
     constructor(x, color, name, isPlayer2) {
         this.name = name;
@@ -82,12 +82,12 @@ class Fighter {
     }
 
     update(opponent) {
-        // Physics / Gravity
+       
         this.vy += gravity;
         this.x += this.vx;
         this.y += this.vy;
 
-        // Ground Collision Check
+       
         if (this.y >= groundY - this.height) {
             this.y = groundY - this.height;
             this.vy = 0;
@@ -96,11 +96,11 @@ class Fighter {
             this.isGrounded = false;
         }
 
-        // Keep inside screen boundaries
+      
         if (this.x < 0) this.x = 0;
         if (this.x > canvas.width - this.width) this.x = canvas.width - this.width;
 
-        // Update direction based on where opponent is located
+       
         this.facing = (opponent.x > this.x) ? 1 : -1;
     }
 
@@ -110,34 +110,34 @@ class Fighter {
         this.isAttacking = true;
         this.attackCooldown = true;
 
-        // Calculate attack reach box
+       
         let attackWidth = 50;
         let attackX = this.facing === 1 ? this.x + this.width : this.x - attackWidth;
         let attackY = this.y + 20;
 
-        // Simple collision math: Box vs Box
+       
         if (attackX < opponent.x + opponent.width &&
             attackX + attackWidth > opponent.x &&
             attackY < opponent.y + opponent.height &&
             attackY + 30 > opponent.y) {
             
             opponent.health = Math.max(0, opponent.health - 10);
-            opponent.vx += this.facing * 8; // Knockback effect
+            opponent.vx += this.facing * 8;
         }
 
-        // Animate strike speed, reset weapon position quickly
+       
         setTimeout(() => this.isAttacking = false, 150);
         setTimeout(() => this.attackCooldown = false, 400);
     }
 
     draw() {
         if (this.health <= 0) {
-            // Draw Knocked Out Stick Figure
+           
             ctx.strokeStyle = '#555';
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.arc(this.x + 15, this.y + 70, 8, 0, Math.PI * 2); // Head flat
-            ctx.moveTo(this.x + 15, this.y + 70); ctx.lineTo(this.x + 45, this.y + 70); // Body flat
+            ctx.arc(this.x + 15, this.y + 70, 8, 0, Math.PI * 2);
+            ctx.moveTo(this.x + 15, this.y + 70); ctx.lineTo(this.x + 45, this.y + 70);
             ctx.stroke();
             return;
         }
@@ -149,73 +149,72 @@ class Fighter {
         let headX = this.x + 15;
         let headY = this.y + 10;
         
-        // 1. Head
+      
         ctx.beginPath();
         ctx.arc(headX, headY, 10, 0, Math.PI * 2);
         ctx.stroke();
 
-        // 2. Spine / Torso
+      
         ctx.beginPath();
         ctx.moveTo(headX, headY + 10);
         ctx.lineTo(headX, this.y + 50);
         ctx.stroke();
 
-        // 3. Legs (Wiggle dynamic resting stance)
+       
         ctx.beginPath();
         ctx.moveTo(headX, this.y + 50);
-        ctx.lineTo(this.x, this.y + this.height); // Left foot
+        ctx.lineTo(this.x, this.y + this.height);
         ctx.moveTo(headX, this.y + 50);
-        ctx.lineTo(this.x + this.width, this.y + this.height); // Right foot
+        ctx.lineTo(this.x + this.width, this.y + this.height); 
         ctx.stroke();
 
-        // 4. Arms / Attack Action State
+       
         ctx.beginPath();
         if (this.isAttacking) {
             ctx.moveTo(headX, headY + 15);
-            ctx.lineTo(headX + (this.facing * 40), headY + 15); // Punch straight forward
+            ctx.lineTo(headX + (this.facing * 40), headY + 15); 
         } else {
             ctx.moveTo(headX, headY + 15);
-            ctx.lineTo(this.x - 5, headY + 35); // Left arm down
+            ctx.lineTo(this.x - 5, headY + 35); 
             ctx.moveTo(headX, headY + 15);
-            ctx.lineTo(this.x + this.width + 5, headY + 35); // Right arm down
+            ctx.lineTo(this.x + this.width + 5, headY + 35);
         }
         ctx.stroke();
     }
 }
 
-// Instance Initialization
+
 const p1 = new Fighter(150, '#3498db', 'Player 1', false);
 const p2 = new Fighter(620, '#e74c3c', 'Player 2', true);
 
-// Main Game Rendering Frame Engine
+
 function loop() {
-    // Clear canvas
+  
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Floor Line
     ctx.strokeStyle = '#444';
     ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
 
-    // Player 1 Input Execution Handling
+   
     p1.vx = 0;
     if (keys['KeyA']) p1.vx = -p1.speed;
     if (keys['KeyD']) p1.vx = p1.speed;
     if (keys['KeyW'] && p1.isGrounded) p1.vy = p1.jumpForce;
     if (keys['Space']) p1.attack(p2);
 
-    // Player 2 Input Execution Handling
+   
     p2.vx = 0;
     if (keys['ArrowLeft']) p2.vx = -p2.speed;
     if (keys['ArrowRight']) p2.vx = p2.speed;
     if (keys['ArrowUp'] && p2.isGrounded) p2.vy = p2.jumpForce;
     if (keys['Enter']) p2.attack(p1);
 
-    // Update Physics Positions
+  
     p1.update(p2);
     p2.update(p1);
 
-    // Decay knockback velocities naturally over frames
+   
     p1.vx *= 0.8;
     p2.vx *= 0.8;
 
@@ -223,11 +222,11 @@ function loop() {
     p1.draw();
     p2.draw();
 
-    // Display Interface Info Overlay (UI Bars)
+   
     drawUI(p1, 20);
     drawUI(p2, canvas.width - 220);
 
-    // Check game over condition
+  
     if (p1.health <= 0 || p2.health <= 0) {
         ctx.fillStyle = 'white';
         ctx.font = 'bold 36px sans-serif';
@@ -239,25 +238,36 @@ function loop() {
 }
 
 function drawUI(player, xOffset) {
-    // Health bar container border
+   
     ctx.strokeStyle = '#555';
     ctx.lineWidth = 2;
     ctx.strokeRect(xOffset, 25, 200, 20);
     
-    // Filled current remaining health fill meter
+   
     ctx.fillStyle = player.color;
     ctx.fillRect(xOffset, 25, player.health * 2, 20);
 
-    // Character Labels name strings
+   
     ctx.fillStyle = '#fff';
     ctx.font = '14px sans-serif';
     ctx.fillText(player.name, xOffset, 18);
 }
 
-// Kick off Engine loop execution initialization
+
 loop();
 </script>
 
 </body>
 </html>
         
+// Inside the input handling for Player 1
+p1.vx = 0;
+p1.isMoving = false; // Assume stationary until keypress
+if (keys['KeyA']) { p1.vx = -p1.speed; p1.isMoving = true; }
+if (keys['KeyD']) { p1.vx = p1.speed; p1.isMoving = true; }
+
+// Inside the input handling for Player 2
+p2.vx = 0;
+p2.isMoving = false; // Assume stationary until keypress
+if (keys['ArrowLeft'])  { p2.vx = -p2.speed; p2.isMoving = true; }
+if (keys['ArrowRight']) { p2.vx = p2.speed; p2.isMoving = true; }
