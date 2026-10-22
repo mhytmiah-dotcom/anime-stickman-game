@@ -271,3 +271,245 @@ p2.vx = 0;
 p2.isMoving = false; // Assume stationary until keypress
 if (keys['ArrowLeft'])  { p2.vx = -p2.speed; p2.isMoving = true; }
 if (keys['ArrowRight']) { p2.vx = p2.speed; p2.isMoving = true; }
+this.vx *= 0.8; // Friction
+// Keep on screen
+if (this.x < 50) this.x = 50;
+if (this.x > canvas.width - 90) this.x = canvas.width - 90;
+if (Math.abs(this.vx) > 0.5) {
+this.walkCycle += 0.2;
+} else {
+this.walkCycle = 0;
+}
+if (this.stateTimer > 0) {
+this.stateTimer--;
+if (this.stateTimer === 0) this.state = 'idle';
+}
+}
+draw() {
+ctx.save();
+if (screenShake > 0) {
+ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+}
+let hX = this.x + 20;
+let hY = this.y + 15;
+ctx.strokeStyle = this.color;
+ctx.lineWidth = 4;
+ctx.lineCap = 'round';
+// Head Arc
+ctx.beginPath();
+ctx.arc(hX, hY, 12, 0, Math.PI * 2);
+ctx.stroke();
+// Spine
+ctx.beginPath();
+ctx.moveTo(hX, hY + 12);
+let spineBottomY = this.y + 55;
+ctx.lineTo(hX, spineBottomY);
+ctx.stroke();
+// Dynamic Moving Legs
+let swing = Math.sin(this.walkCycle) * 15;
+ctx.beginPath();
+ctx.moveTo(hX, spineBottomY);
+ctx.lineTo(hX - 10 + swing, this.y + this.height);
+ctx.moveTo(hX, spineBottomY);
+ctx.lineTo(hX + 10 - swing, this.y + this.height);
+ctx.stroke();
+// Combat State Arms Processing Engine
+ctx.beginPath();
+if (this.state === 'attacking') {
+ctx.moveTo(hX, hY + 16);
+ctx.lineTo(hX + (this.facing * 45), hY + 12);
+} else if (this.state === 'hit') {
+ctx.moveTo(hX, hY + 16);
+ctx.lineTo(hX - (this.facing * 25), hY - 5);
+} else {
+ctx.moveTo(hX, hY + 16);
+ctx.lineTo(hX + (this.facing * 15), hY + 30);
+}
+ctx.stroke();
+ctx.restore();
+}
+}
+let p1, p2;
+function initGame() {
+let p2CharPool = ['gojo', 'asta', 'yuno'].filter(c => c !== selectedChar);
+let p2Chosen = p2CharPool[Math.floor(Math.random() * p2CharPool.length)];
+document.getElementById('p1-name').innerText = selectedChar.toUpperCase();
+document.getElementById('p2-name').innerText = "AI " + p2Chosen.toUpperCase();
+p1 = new Fighter(150, 330, '#33ccff', selectedChar, false, selectedChar);
+p2 = new Fighter(600, 330, '#ff3366', p2Chosen, true, p2Chosen);
+particles = [];
+projectiles = [];
+gameState = 'playing';
+updateHUD();
+}
+function spawnParticles(x, y, color, count) {
+for (let i = 0; i < count; i++) {
+particles.push({
+x: x, y: y,
+vx: (Math.random() - 0.5) * 10,
+vy: (Math.random() - 0.5) * 10,
+radius: Math.random() * 4 + 2,
+color: color,
+alpha: 1
+});
+}
+}
+function handleP1Attack(type) {
+if (gameState !== 'playing' || p1.state === 'hit') return;
+executeAttack(p1, p2, type);
+}
+function executeAttack(attacker, defender, type) {
+attacker.state = 'attacking';
+attacker.stateTimer = 15;
+if (type === 'light') {
+let reach = 60;
+if (attacker.facing === 1 && attacker.x + attacker.width + reach >= defender.x && attacker.x <= defender.x) {
+hitTarget(attacker, defender, 8, 4, '#fff');
+} else if (attacker.facing === -1 && attacker.x - reach <= defender.x + defender.width && attacker.x >= defender.x) {
+hitTarget(attacker, defender, 8, 4, '#fff');
+}
+} else if (type === 'heavy') {
+let reach = 70;
+if (attacker.facing === 1 && attacker.x + attacker.width + reach >= defender.x && attacker.x <= defender.x) {
+hitTarget(attacker, defender, 15, 15, '#ffcc00');
+} else if (attacker.facing === -1 && attacker.x - reach <= defender.x + defender.width && attacker.x >= defender.x) {
+hitTarget(attacker, defender, 15, 15, '#ffcc00');
+}
+} else if (type === 'special') {
+if (attacker.energy < 100) return;
+attacker.energy = 0;
+if (attacker.type === 'gojo') {
+projectiles.push({ x: attacker.x, y: attacker.y + 30, vx: attacker.facing * 12, size: 25, color: '#9933ff', owner: attacker, damage: 35 });
+} else if (attacker.type === 'asta') {
+projectiles.push({ x: attacker.x, y: attacker.y + 30, vx: attacker.facing * 15, size: 20, color: '#444444', owner: attacker, damage: 30 });
+} else {
+projectiles.push({ x: attacker.x, y: attacker.y + 30, vx: attacker.facing * 10, size: 15, color: '#33ff99', owner: attacker, damage: 25 });
+projectiles.push({ x: attacker.x, y: attacker.y + 10, vx: attacker.facing * 10, size: 15, color: '#33ff99', owner: attacker, damage: 25 });
+}
+}
+}
+function hitTarget(attacker, defender, damage, knockback, particleColor) {
+defender.health = Math.max(0, defender.health - damage);
+defender.vx += attacker.facing * knockback;
+defender.state = 'hit';
+defender.stateTimer = 20;
+attacker.energy = Math.min(100, attacker.energy + 15);
+screenShake = 10;
+spawnParticles(defender.x + 20, defender.y + 30, particleColor, 12);
+updateHUD();
+checkMatchOverStates();
+}
+function updateHUD() {
+document.getElementById('p1-health').style.width = p1.health + '%';
+document.getElementById('p2-health').style.width = p2.health + '%';
+document.getElementById('p1-energy').style.width = p1.energy + '%';
+document.getElementById('p2-energy').style.width = p2.energy + '%';
+updateRoundDots('p1-rounds', p1Score);
+updateRoundDots('p2-rounds', p2Score);
+}
+function updateRoundDots(panelId, score) {
+const dots = document.getElementById(panelId).children;
+for(let i=0; i<dots.length; i++) {
+if(i < score) dots[i].classList.add('won');
+else dots[i].classList.remove('won');
+}
+}
+function checkMatchOverStates() {
+if (gameState !== 'playing') return;
+if (p1.health <= 0 || p2.health <= 0) {
+gameState = 'roundOver';
+let roundMsg = document.getElementById('round-msg');
+if (p1.health > 0) {
+p1Score++;
+roundMsg.innerText = "YOU WIN THIS ROUND!";
+} else {
+p2Score++;
+roundMsg.innerText = "AI WINS THIS ROUND!";
+}
+updateHUD();
+document.getElementById('round-screen').classList.remove('hidden');
+setTimeout(() => {
+document.getElementById('round-screen').classList.add('hidden');
+if (p1Score >= 2 || p2Score >= 2) {
+p1Score = 0; p2Score = 0;
+document.getElementById('setup-screen').classList.remove('hidden');
+gameState = 'setup';
+} else {
+initGame();
+}
+}, 2000);
+}
+}
+// The Engine Loop Logic Execution
+function loop() {
+// Stage Background Graphics Rendering Engine
+if (selectedStage === 'cyber') ctx.fillStyle = '#1a0033';
+else if (selectedStage === 'ruins') ctx.fillStyle = '#2c3e50';
+else ctx.fillStyle = '#22222b'; // Dojo default
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+// Ground Line Floor draw
+ctx.strokeStyle = '#444';
+ctx.lineWidth = 6;
+ctx.beginPath(); ctx.moveTo(0, 420); ctx.lineTo(canvas.width, 420); ctx.stroke();
+if (gameState === 'playing') {
+// Player Action Movement Inputs Engine
+if (keys.a) { p1.vx = -5; p1.facing = -1; }
+if (keys.d) { p1.vx = 5; p1.facing = 1; }
+// Basic Autonomous Threat Tracker Logic (AI Engine)
+let dist = Math.abs(p1.x - p2.x);
+p2.facing = (p1.x > p2.x) ? 1 : -1;
+if (p2.state !== 'hit' && p2.state !== 'attacking' && Math.random() < 0.05) {
+if (dist > 80) {
+p2.vx = p2.facing * 4;
+} else {
+let attackChoice = Math.random();
+if (p2.energy >= 100) executeAttack(p2, p1, 'special');
+else if (attackChoice < 0.7) executeAttack(p2, p1, 'light');
+else executeAttack(p2, p1, 'heavy');
+}
+}
+p1.update();
+p2.update();
+}
+// Projectile Vector Physics Calculations Engine
+for (let i = projectiles.length - 1; i >= 0; i--) {
+let proj = projectiles[i];
+proj.x += proj.vx;
+ctx.fillStyle = proj.color;
+ctx.beginPath();
+ctx.arc(proj.x, proj.y, proj.size, 0, Math.PI * 2);
+ctx.fill();
+// Box overlap tracking calculation check
+let target = (proj.owner === p1) ? p2 : p1;
+if (proj.x > target.x && proj.x < target.x + target.width && proj.y > target.y && proj.y < target.y + target.height) {
+hitTarget(proj.owner, target, proj.damage, proj.vx > 0 ? 12 : -12, proj.color);
+projectiles.splice(i, 1);
+continue;
+}
+if (proj.x < 0 || proj.x > canvas.width) projectiles.splice(i, 1);
+}
+// Visual Particle System Explosion Processing Engine
+for (let i = particles.length - 1; i >= 0; i--) {
+let p = particles[i];
+p.x += p.vx;
+p.y += p.vy;
+p.alpha -= 0.03;
+if (p.alpha <= 0) {
+particles.splice(i, 1);
+continue;
+}
+ctx.save();
+ctx.globalAlpha = p.alpha;
+ctx.fillStyle = p.color;
+ctx.beginPath();
+ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+ctx.fill();
+ctx.restore();
+}
+p1.draw();
+p2.draw();
+if (screenShake > 0) screenShake *= 0.9;
+requestAnimationFrame(loop);
+}
+loop();
