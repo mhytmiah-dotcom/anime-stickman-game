@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stick Figure Fighter</title>
+    <title>Stickman Starter Core</title>
     <style>
         body {
             margin: 0;
@@ -12,504 +11,303 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            font-family: sans-serif;
             color: white;
-            overflow: hidden;
-        }
-        #gameContainer {
-            text-align: center;
+            font-family: sans-serif;
         }
         canvas {
+            border: 2px solid #fff;
             background: #222;
-            border: 4px solid #444;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
-        .controls {
-            margin-top: 15px;
-            display: flex;
-            justify-content: space-around;
-            font-size: 14px;
-            color: #aaa;
-        }
-        span { color: #fff; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="gameContainer">
-    <h2>Stick Figure Arena</h2>
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
-    <div class="controls">
-        <div><strong>Player 1 (Left):</strong> Move: <span>A / D</span> | Jump: <span>W</span> | Attack: <span>Spacebar</span></div>
-        <div><strong>Player 2 (Right):</strong> Move: <span>Left / Right Arrow</span> | Jump: <span>Up Arrow</span> | Attack: <span>Enter</span></div>
-    </div>
-</div>
+<canvas id="gameCanvas" width="800" height="400"></canvas>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+const GRAVITY = 0.5;
+const GROUND_Y = 350;
 
-const gravity = 0.6;
-const groundY = 350;
+const keys = {
+    left: false,
+    right: false,
+    up: false
+};
+
+const player = {
+    x: 100,
+    y: GROUND_Y,
+    vx: 0,
+    vy: 0,
+    speed: 5,
+    jumpForce: 12,
+    isGrounded: false,
+    size: 40 
+};
 
 
-const keys = {};
-window.addEventListener('keydown', e => keys[e.code] = true);
-window.addEventListener('keyup', e => keys[e.code] = false);
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+    if ((e.key === 'ArrowUp' || e.key === 'w') && player.isGrounded) {
+        player.vy = -player.jumpForce;
+        player.isGrounded = false;
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+});
 
 
-class Fighter {
-    constructor(x, color, name, isPlayer2) {
-        this.name = name;
-        this.x = x;
-        this.y = groundY;
-        this.color = color;
-        this.isPlayer2 = isPlayer2;
-        
-        this.width = 30;
-        this.height = 80;
-        this.vx = 0;
-        this.vy = 0;
-        this.speed = 5;
-        this.jumpForce = -12;
-        this.isGrounded = false;
-        
-        this.health = 100;
-        this.isAttacking = false;
-        this.attackCooldown = false;
-        this.facing = isPlayer2 ? -1 : 1; 
+function update() {
+
+    if (keys.left) player.vx = -player.speed;
+    else if (keys.right) player.vx = player.speed;
+    else player.vx = 0;
+
+    player.x += player.vx;
+
+    player.vy += GRAVITY;
+    player.y += player.vy;
+
+  
+    if (player.y >= GROUND_Y) {
+        player.y = GROUND_Y;
+        player.vy = 0;
+        player.isGrounded = true;
     }
 
-    update(opponent) {
-       
-        this.vy += gravity;
-        this.x += this.vx;
-        this.y += this.vy;
-
-       
-        if (this.y >= groundY - this.height) {
-            this.y = groundY - this.height;
-            this.vy = 0;
-            this.isGrounded = true;
-        } else {
-            this.isGrounded = false;
-        }
-
-      
-        if (this.x < 0) this.x = 0;
-        if (this.x > canvas.width - this.width) this.x = canvas.width - this.width;
-
-       
-        this.facing = (opponent.x > this.x) ? 1 : -1;
-    }
-
-    attack(opponent) {
-        if (this.attackCooldown || this.health <= 0) return;
-        
-        this.isAttacking = true;
-        this.attackCooldown = true;
-
-       
-        let attackWidth = 50;
-        let attackX = this.facing === 1 ? this.x + this.width : this.x - attackWidth;
-        let attackY = this.y + 20;
-
-       
-        if (attackX < opponent.x + opponent.width &&
-            attackX + attackWidth > opponent.x &&
-            attackY < opponent.y + opponent.height &&
-            attackY + 30 > opponent.y) {
-            
-            opponent.health = Math.max(0, opponent.health - 10);
-            opponent.vx += this.facing * 8;
-        }
-
-       
-        setTimeout(() => this.isAttacking = false, 150);
-        setTimeout(() => this.attackCooldown = false, 400);
-    }
-
-    draw() {
-        if (this.health <= 0) {
-           
-            ctx.strokeStyle = '#555';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.arc(this.x + 15, this.y + 70, 8, 0, Math.PI * 2);
-            ctx.moveTo(this.x + 15, this.y + 70); ctx.lineTo(this.x + 45, this.y + 70);
-            ctx.stroke();
-            return;
-        }
-
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = 4;
-        ctx.fillStyle = this.color;
-
-        let headX = this.x + 15;
-        let headY = this.y + 10;
-        
-      
-        ctx.beginPath();
-        ctx.arc(headX, headY, 10, 0, Math.PI * 2);
-        ctx.stroke();
-
-      
-        ctx.beginPath();
-        ctx.moveTo(headX, headY + 10);
-        ctx.lineTo(headX, this.y + 50);
-        ctx.stroke();
-
-       
-        ctx.beginPath();
-        ctx.moveTo(headX, this.y + 50);
-        ctx.lineTo(this.x, this.y + this.height);
-        ctx.moveTo(headX, this.y + 50);
-        ctx.lineTo(this.x + this.width, this.y + this.height); 
-        ctx.stroke();
-
-       
-        ctx.beginPath();
-        if (this.isAttacking) {
-            ctx.moveTo(headX, headY + 15);
-            ctx.lineTo(headX + (this.facing * 40), headY + 15); 
-        } else {
-            ctx.moveTo(headX, headY + 15);
-            ctx.lineTo(this.x - 5, headY + 35); 
-            ctx.moveTo(headX, headY + 15);
-            ctx.lineTo(this.x + this.width + 5, headY + 35);
-        }
-        ctx.stroke();
-    }
+    
+    if (player.x < 20) player.x = 20;
+    if (player.x > canvas.width - 20) player.x = canvas.width - 20;
 }
 
 
-const p1 = new Fighter(150, '#3498db', 'Player 1', false);
-const p2 = new Fighter(620, '#e74c3c', 'Player 2', true);
+function drawStickman(x, y) {
+    ctx.strokeStyle = '#00ffcc';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+
+   
+    ctx.beginPath();
+    ctx.arc(x, y - 60, 12, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x, y - 48);
+    ctx.lineTo(x, y - 20);
+    ctx.stroke();
+
+
+    ctx.beginPath();
+    ctx.moveTo(x, y - 40);
+   
+    ctx.lineTo(x - 15, y - (keys.left ? 45 : 30));
+    ctx.moveTo(x, y - 40);
+    
+    ctx.lineTo(x + 15, y - (keys.right ? 45 : 30));
+    ctx.stroke();
+
+  
+    ctx.beginPath();
+    ctx.moveTo(x, y - 20);
+   
+    ctx.lineTo(x - 12, y);
+    ctx.moveTo(x, y - 20);
+   
+    ctx.lineTo(x + 12, y);
+    ctx.stroke();
+}
+
+
+function drawEnvironment() {
+    
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, GROUND_Y);
+    ctx.lineTo(canvas.width, GROUND_Y);
+    ctx.stroke();
+}
 
 
 function loop() {
-  
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.strokeStyle = '#444';
-    ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
-
-   
-    p1.vx = 0;
-    if (keys['KeyA']) p1.vx = -p1.speed;
-    if (keys['KeyD']) p1.vx = p1.speed;
-    if (keys['KeyW'] && p1.isGrounded) p1.vy = p1.jumpForce;
-    if (keys['Space']) p1.attack(p2);
-
-   
-    p2.vx = 0;
-    if (keys['ArrowLeft']) p2.vx = -p2.speed;
-    if (keys['ArrowRight']) p2.vx = p2.speed;
-    if (keys['ArrowUp'] && p2.isGrounded) p2.vy = p2.jumpForce;
-    if (keys['Enter']) p2.attack(p1);
-
-  
-    p1.update(p2);
-    p2.update(p1);
-
-   
-    p1.vx *= 0.8;
-    p2.vx *= 0.8;
-
-    // Draw Characters
-    p1.draw();
-    p2.draw();
-
-   
-    drawUI(p1, 20);
-    drawUI(p2, canvas.width - 220);
-
-  
-    if (p1.health <= 0 || p2.health <= 0) {
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 36px sans-serif';
-        let winner = p1.health > 0 ? p1.name : p2.name;
-        ctx.fillText(`${winner} Wins!`, canvas.width / 2 - 100, canvas.height / 2);
-    }
+    update();
+    drawEnvironment();
+    drawStickman(player.x, player.y);
 
     requestAnimationFrame(loop);
 }
 
-function drawUI(player, xOffset) {
-   
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(xOffset, 25, 200, 20);
+
+loop()
+let p1Health = 100;
+let enemyHealth = 100;
+
+
+const playerAttack = { active: false, timer: 0, range: 40 };
+const enemyAttack = { active: false, timer: 0, range: 40 };
+
+
+const enemy = {
+    x: 600,
+    y: GROUND_Y,
+    vx: 0,
+    vy: 0,
+    speed: 2,
+    size: 40,
+    state: 'CHASE',
+    cooldownTimer: 0
+};
+
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === ' ' || e.key === 'j') { 
+        if (!playerAttack.active) {
+            playerAttack.active = true;
+            playerAttack.timer = 10;
+            checkCombatCollision(player, enemy, playerAttack.range, true);
+        }
+    }
+});
+
+
+function checkCombatCollision(attacker, defender, range, isPlayerAttacking) {
+    
+    const distance = Math.abs(attacker.x - defender.x);
     
    
-    ctx.fillStyle = player.color;
-    ctx.fillRect(xOffset, 25, player.health * 2, 20);
-
-   
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px sans-serif';
-    ctx.fillText(player.name, xOffset, 18);
+    if (distance <= range && Math.abs(attacker.y - defender.y) < 50) {
+        if (isPlayerAttacking) {
+            enemyHealth = Math.max(0, enemyHealth - 15);
+        } else {
+            p1Health = Math.max(0, p1Health - 10);
+        }
+    }
 }
 
 
-loop();
+function updateEnemyAI() {
+    if (enemyHealth <= 0) return;
+
+    const distToPlayer = player.x - enemy.x;
+    const absDist = Math.abs(distToPlayer);
+
+    if (enemy.cooldownTimer > 0) {
+        enemy.cooldownTimer--;
+        enemy.vx = 0;
+    } else if (absDist > 35) {
+       
+        enemy.vx = Math.sign(distToPlayer) * enemy.speed;
+        enemy.x += enemy.vx;
+    } else {
+       
+        enemy.vx = 0;
+        enemyAttack.active = true;
+        enemyAttack.timer = 15;
+        enemy.cooldownTimer = 45;
+        checkCombatCollision(enemy, player, enemyAttack.range, false);
+    }
+}
+
+
+function drawUI() {
+    
+    ctx.fillStyle = '#444';
+    ctx.fillRect(20, 20, 200, 20);
+    ctx.fillStyle = '#00ffcc';
+    ctx.fillRect(20, 20, p1Health * 2, 20);
+    ctx.fillStyle = '#fff';
+    ctx.fillText("PLAYER", 25, 34);
+
+    
+    ctx.fillStyle = '#444';
+    ctx.fillRect(canvas.width - 220, 20, 200, 20);
+    ctx.fillStyle = '#ff3333';
+    ctx.fillRect(canvas.width - 220, 20, enemyHealth * 2, 20);
+    ctx.fillStyle = '#fff';
+    ctx.fillText("AI ENEMY", canvas.width - 215, 34);
+    
+  
+    ctx.font = "24px sans-serif";
+    if (enemyHealth <= 0) {
+        ctx.fillStyle = '#00ffcc';
+        ctx.fillText("VICTORY!", canvas.width / 2 - 50, 100);
+    } else if (p1Health <= 0) {
+        ctx.fillStyle = '#ff3333';
+        ctx.fillText("GAME OVER", canvas.width / 2 - 60, 100);
+    }
+}
+
+
+function drawEnemy(x, y) {
+    if (enemyHealth <= 0) {
+   
+        ctx.strokeStyle = '#555555';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x - 20, y); ctx.lineTo(x + 20, y);
+        ctx.stroke();
+        return;
+    }
+
+    ctx.strokeStyle = '#ff3333';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+
+  
+    ctx.beginPath(); ctx.arc(x, y - 60, 12, 0, Math.PI * 2); ctx.stroke();
+    // Spine
+    ctx.beginPath(); ctx.moveTo(x, y - 48); ctx.lineTo(x, y - 20); ctx.stroke();
+
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y - 40);
+    if (enemyAttack.active) {
+        ctx.lineTo(x - 25, y - 40); 
+    } else {
+        ctx.lineTo(x - 12, y - 25);
+    }
+    ctx.moveTo(x, y - 40);
+    ctx.lineTo(x + 12, y - 25);
+    ctx.stroke();
+
+    // Legs
+    ctx.beginPath();
+    ctx.moveTo(x, y - 20); ctx.lineTo(x - 12, y);
+    ctx.moveTo(x, y - 20); ctx.lineTo(x + 12, y);
+    ctx.stroke();
+}
+
+
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+   
+    if (playerAttack.active) { playerAttack.timer--; if(playerAttack.timer <= 0) playerAttack.active = false; }
+    if (enemyAttack.active) { enemyAttack.timer--; if(enemyAttack.timer <= 0) enemyAttack.active = false; }
+
+   
+    if (p1Health > 0) update(); 
+    updateEnemyAI();
+
+   
+    drawEnvironment();
+    drawStickman(player.x, player.y);
+    drawEnemy(enemy.x, enemy.y);
+    drawUI();
+
+    requestAnimationFrame(loop);
+}
+
 </script>
 
 </body>
 </html>
-        
-// Inside the input handling for Player 1
-p1.vx = 0;
-p1.isMoving = false; // Assume stationary until keypress
-if (keys['KeyA']) { p1.vx = -p1.speed; p1.isMoving = true; }
-if (keys['KeyD']) { p1.vx = p1.speed; p1.isMoving = true; }
-
-// Inside the input handling for Player 2
-p2.vx = 0;
-p2.isMoving = false; // Assume stationary until keypress
-if (keys['ArrowLeft'])  { p2.vx = -p2.speed; p2.isMoving = true; }
-if (keys['ArrowRight']) { p2.vx = p2.speed; p2.isMoving = true; }
-this.vx *= 0.8; // Friction
-// Keep on screen
-if (this.x < 50) this.x = 50;
-if (this.x > canvas.width - 90) this.x = canvas.width - 90;
-if (Math.abs(this.vx) > 0.5) {
-this.walkCycle += 0.2;
-} else {
-this.walkCycle = 0;
-}
-if (this.stateTimer > 0) {
-this.stateTimer--;
-if (this.stateTimer === 0) this.state = 'idle';
-}
-}
-draw() {
-ctx.save();
-if (screenShake > 0) {
-ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
-}
-let hX = this.x + 20;
-let hY = this.y + 15;
-ctx.strokeStyle = this.color;
-ctx.lineWidth = 4;
-ctx.lineCap = 'round';
-// Head Arc
-ctx.beginPath();
-ctx.arc(hX, hY, 12, 0, Math.PI * 2);
-ctx.stroke();
-// Spine
-ctx.beginPath();
-ctx.moveTo(hX, hY + 12);
-let spineBottomY = this.y + 55;
-ctx.lineTo(hX, spineBottomY);
-ctx.stroke();
-// Dynamic Moving Legs
-let swing = Math.sin(this.walkCycle) * 15;
-ctx.beginPath();
-ctx.moveTo(hX, spineBottomY);
-ctx.lineTo(hX - 10 + swing, this.y + this.height);
-ctx.moveTo(hX, spineBottomY);
-ctx.lineTo(hX + 10 - swing, this.y + this.height);
-ctx.stroke();
-// Combat State Arms Processing Engine
-ctx.beginPath();
-if (this.state === 'attacking') {
-ctx.moveTo(hX, hY + 16);
-ctx.lineTo(hX + (this.facing * 45), hY + 12);
-} else if (this.state === 'hit') {
-ctx.moveTo(hX, hY + 16);
-ctx.lineTo(hX - (this.facing * 25), hY - 5);
-} else {
-ctx.moveTo(hX, hY + 16);
-ctx.lineTo(hX + (this.facing * 15), hY + 30);
-}
-ctx.stroke();
-ctx.restore();
-}
-}
-let p1, p2;
-function initGame() {
-let p2CharPool = ['gojo', 'asta', 'yuno'].filter(c => c !== selectedChar);
-let p2Chosen = p2CharPool[Math.floor(Math.random() * p2CharPool.length)];
-document.getElementById('p1-name').innerText = selectedChar.toUpperCase();
-document.getElementById('p2-name').innerText = "AI " + p2Chosen.toUpperCase();
-p1 = new Fighter(150, 330, '#33ccff', selectedChar, false, selectedChar);
-p2 = new Fighter(600, 330, '#ff3366', p2Chosen, true, p2Chosen);
-particles = [];
-projectiles = [];
-gameState = 'playing';
-updateHUD();
-}
-function spawnParticles(x, y, color, count) {
-for (let i = 0; i < count; i++) {
-particles.push({
-x: x, y: y,
-vx: (Math.random() - 0.5) * 10,
-vy: (Math.random() - 0.5) * 10,
-radius: Math.random() * 4 + 2,
-color: color,
-alpha: 1
-});
-}
-}
-function handleP1Attack(type) {
-if (gameState !== 'playing' || p1.state === 'hit') return;
-executeAttack(p1, p2, type);
-}
-function executeAttack(attacker, defender, type) {
-attacker.state = 'attacking';
-attacker.stateTimer = 15;
-if (type === 'light') {
-let reach = 60;
-if (attacker.facing === 1 && attacker.x + attacker.width + reach >= defender.x && attacker.x <= defender.x) {
-hitTarget(attacker, defender, 8, 4, '#fff');
-} else if (attacker.facing === -1 && attacker.x - reach <= defender.x + defender.width && attacker.x >= defender.x) {
-hitTarget(attacker, defender, 8, 4, '#fff');
-}
-} else if (type === 'heavy') {
-let reach = 70;
-if (attacker.facing === 1 && attacker.x + attacker.width + reach >= defender.x && attacker.x <= defender.x) {
-hitTarget(attacker, defender, 15, 15, '#ffcc00');
-} else if (attacker.facing === -1 && attacker.x - reach <= defender.x + defender.width && attacker.x >= defender.x) {
-hitTarget(attacker, defender, 15, 15, '#ffcc00');
-}
-} else if (type === 'special') {
-if (attacker.energy < 100) return;
-attacker.energy = 0;
-if (attacker.type === 'gojo') {
-projectiles.push({ x: attacker.x, y: attacker.y + 30, vx: attacker.facing * 12, size: 25, color: '#9933ff', owner: attacker, damage: 35 });
-} else if (attacker.type === 'asta') {
-projectiles.push({ x: attacker.x, y: attacker.y + 30, vx: attacker.facing * 15, size: 20, color: '#444444', owner: attacker, damage: 30 });
-} else {
-projectiles.push({ x: attacker.x, y: attacker.y + 30, vx: attacker.facing * 10, size: 15, color: '#33ff99', owner: attacker, damage: 25 });
-projectiles.push({ x: attacker.x, y: attacker.y + 10, vx: attacker.facing * 10, size: 15, color: '#33ff99', owner: attacker, damage: 25 });
-}
-}
-}
-function hitTarget(attacker, defender, damage, knockback, particleColor) {
-defender.health = Math.max(0, defender.health - damage);
-defender.vx += attacker.facing * knockback;
-defender.state = 'hit';
-defender.stateTimer = 20;
-attacker.energy = Math.min(100, attacker.energy + 15);
-screenShake = 10;
-spawnParticles(defender.x + 20, defender.y + 30, particleColor, 12);
-updateHUD();
-checkMatchOverStates();
-}
-function updateHUD() {
-document.getElementById('p1-health').style.width = p1.health + '%';
-document.getElementById('p2-health').style.width = p2.health + '%';
-document.getElementById('p1-energy').style.width = p1.energy + '%';
-document.getElementById('p2-energy').style.width = p2.energy + '%';
-updateRoundDots('p1-rounds', p1Score);
-updateRoundDots('p2-rounds', p2Score);
-}
-function updateRoundDots(panelId, score) {
-const dots = document.getElementById(panelId).children;
-for(let i=0; i<dots.length; i++) {
-if(i < score) dots[i].classList.add('won');
-else dots[i].classList.remove('won');
-}
-}
-function checkMatchOverStates() {
-if (gameState !== 'playing') return;
-if (p1.health <= 0 || p2.health <= 0) {
-gameState = 'roundOver';
-let roundMsg = document.getElementById('round-msg');
-if (p1.health > 0) {
-p1Score++;
-roundMsg.innerText = "YOU WIN THIS ROUND!";
-} else {
-p2Score++;
-roundMsg.innerText = "AI WINS THIS ROUND!";
-}
-updateHUD();
-document.getElementById('round-screen').classList.remove('hidden');
-setTimeout(() => {
-document.getElementById('round-screen').classList.add('hidden');
-if (p1Score >= 2 || p2Score >= 2) {
-p1Score = 0; p2Score = 0;
-document.getElementById('setup-screen').classList.remove('hidden');
-gameState = 'setup';
-} else {
-initGame();
-}
-}, 2000);
-}
-}
-// The Engine Loop Logic Execution
-function loop() {
-// Stage Background Graphics Rendering Engine
-if (selectedStage === 'cyber') ctx.fillStyle = '#1a0033';
-else if (selectedStage === 'ruins') ctx.fillStyle = '#2c3e50';
-else ctx.fillStyle = '#22222b'; // Dojo default
-ctx.clearRect(0, 0, canvas.width, canvas.height);
-ctx.fillRect(0, 0, canvas.width, canvas.height);
-// Ground Line Floor draw
-ctx.strokeStyle = '#444';
-ctx.lineWidth = 6;
-ctx.beginPath(); ctx.moveTo(0, 420); ctx.lineTo(canvas.width, 420); ctx.stroke();
-if (gameState === 'playing') {
-// Player Action Movement Inputs Engine
-if (keys.a) { p1.vx = -5; p1.facing = -1; }
-if (keys.d) { p1.vx = 5; p1.facing = 1; }
-// Basic Autonomous Threat Tracker Logic (AI Engine)
-let dist = Math.abs(p1.x - p2.x);
-p2.facing = (p1.x > p2.x) ? 1 : -1;
-if (p2.state !== 'hit' && p2.state !== 'attacking' && Math.random() < 0.05) {
-if (dist > 80) {
-p2.vx = p2.facing * 4;
-} else {
-let attackChoice = Math.random();
-if (p2.energy >= 100) executeAttack(p2, p1, 'special');
-else if (attackChoice < 0.7) executeAttack(p2, p1, 'light');
-else executeAttack(p2, p1, 'heavy');
-}
-}
-p1.update();
-p2.update();
-}
-// Projectile Vector Physics Calculations Engine
-for (let i = projectiles.length - 1; i >= 0; i--) {
-let proj = projectiles[i];
-proj.x += proj.vx;
-ctx.fillStyle = proj.color;
-ctx.beginPath();
-ctx.arc(proj.x, proj.y, proj.size, 0, Math.PI * 2);
-ctx.fill();
-// Box overlap tracking calculation check
-let target = (proj.owner === p1) ? p2 : p1;
-if (proj.x > target.x && proj.x < target.x + target.width && proj.y > target.y && proj.y < target.y + target.height) {
-hitTarget(proj.owner, target, proj.damage, proj.vx > 0 ? 12 : -12, proj.color);
-projectiles.splice(i, 1);
-continue;
-}
-if (proj.x < 0 || proj.x > canvas.width) projectiles.splice(i, 1);
-}
-// Visual Particle System Explosion Processing Engine
-for (let i = particles.length - 1; i >= 0; i--) {
-let p = particles[i];
-p.x += p.vx;
-p.y += p.vy;
-p.alpha -= 0.03;
-if (p.alpha <= 0) {
-particles.splice(i, 1);
-continue;
-}
-ctx.save();
-ctx.globalAlpha = p.alpha;
-ctx.fillStyle = p.color;
-ctx.beginPath();
-ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-ctx.fill();
-ctx.restore();
-}
-p1.draw();
-p2.draw();
-if (screenShake > 0) screenShake *= 0.9;
-requestAnimationFrame(loop);
-}
-loop();
