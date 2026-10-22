@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> <meta charset="UTF-8"> <title>Anime Stickman Battle: Awakening</title> <style> body {
+<head>
+    <meta charset="UTF-8">
+    <title>Anime Stickman Battle: Ultimate Arena</title>
+    <style>
+        body {
             margin: 0;
-            background: #0f1115;
+            background: #0b0c10;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -11,54 +15,129 @@
             color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
-        }.game-wrapper {
-           background: #151821;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            border: 2px solid #2a2f3d;
+            overflow: hidden;
+        }
+        .game-container {
+            background: #1f232d;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+            border: 2px solid #2f3645;
+            position: relative;
+            width: 860px;
         }
         canvas {
-            background: #091a15; /* Match your deep dark green theme */
-            border-radius: 6px;
+            border-radius: 8px;
             display: block;
+            background: #050f0c;
         }
-        .btn-panel {
+        .ui-buttons {
             display: flex;
             justify-content: center;
             gap: 12px;
             margin-top: 15px;
         }
         button {
-            background: #282c37;
-            color: #d8dee9;
-            border: 2px solid #3b4252;
-            padding: 10px 20px;
+            background: #2c313d;
+            color: #e5e9f0;
+            border: 2px solid #434c5e;
+            padding: 12px 24px;
             font-weight: bold;
-            border-radius: 20px;
+            font-size: 14px;
+            border-radius: 24px;
             cursor: pointer;
             transition: all 0.2s;
         }
         button:hover {
-            background: #434c5e;
+            background: #4c566a;
             transform: translateY(-2px);
         }
-        .btn-attack { border-color: #4c566a; }
-        .btn-special { border-color: #2e8b57; color: #a3be8c; }
-        .btn-ult { border-color: #bf616a; color: #ff3333; }
-        .btn-awaken { border-color: #d08770; color: #ebcb8b; }
+        /* Menu Screen Styles */
+        .overlay-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0f1115;
+            border-radius: 16px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .menu-title {
+            font-size: 26px;
+            font-weight: bold;
+            color: #ebcb8b;
+            margin-bottom: 20px;
+            letter-spacing: 1.5px;
+        }
+        .selection-grid {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            width: 100%;
+            justify-content: center;
+        }
+        .select-card {
+            background: #1a1c23;
+            border: 2px solid #3b4252;
+            padding: 15px;
+            border-radius: 10px;
+            width: 170px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .select-card:hover, .select-card.active {
+            border-color: #81a1c1;
+            background: #242933;
+            transform: scale(1.03);
+        }
     </style>
 </head>
 <body>
 
-<div class="game-wrapper">
-    <canvas id="gameCanvas" width="800" height="380"></canvas>
-    <div class="btn-panel">
-        <button class="btn-attack" onclick="triggerMove('attack')">Attack [J / Space]</button>
-        <button class="btn-special" onclick="triggerMove('special')">Special [K]</button>
-        <button class="btn-ult" onclick="triggerMove('ult')">Ultimate [L]</button>
-        <button class="btn-awaken" onclick="triggerMove('awaken')">Toggle Awakening</button>
-        <button onclick="switchCharacter()">Switch Character</button>
+<div class="game-container">
+    <!-- Menu State Screen Layer -->
+    <div id="gameMenu" class="overlay-menu">
+        <!-- Step 1: Stage Select -->
+        <div id="stageSelectSection" style="width:100%; text-align:center;">
+            <div class="menu-title">SELECT STAGE</div>
+            <div class="selection-grid">
+                <div class="select-card active" id="stage0" onclick="setStage(0)">
+                    <h3 style="color:#bf616a; margin:4px 0;">SHIBUYA INCIDENT</h3>
+                    <span style="font-size:11px; color:#6f778a;">Metropolitan Neon Subway</span>
+                </div>
+                <div class="select-card" id="stage1" onclick="setStage(1)">
+                    <h3 style="color:#a3be8c; margin:4px 0;">CLOVER KINGDOM</h3>
+                    <span style="font-size:11px; color:#6f778a;">Royal Mountain Magic Citadel</span>
+                </div>
+            </div>
+            <button onclick="goToFighterSelect()" style="border-color:#5e81ac; color:#88c0d0;">NEXT: CHOOSE YOUR FIGHTER →</button>
+        </div>
+
+        <!-- Step 2: Fighter Select (Hidden Initially) -->
+        <div id="fighterSelectSection" style="width:100%; text-align:center; display:none;">
+            <div class="menu-title">CHOOSE YOUR FIGHTER</div>
+            <div class="selection-grid">
+                <div class="select-card" onclick="startGame(0)" style="color:#ff9400;"><h3>Goku</h3><span style="font-size:10px;color:#777">Kamehameha Cannon</span></div>
+                <div class="select-card" onclick="startGame(1)" style="color:#ffffff;"><h3>Luffy</h3><span style="font-size:10px;color:#777">Gear 5 Sun God Nika</span></div>
+                <div class="select-card" onclick="startGame(2)" style="color:#bf616a;"><h3>Asta</h3><span style="font-size:10px;color:#777">Black Meteorite Stance</span></div>
+                <div class="select-card" onclick="startGame(3)" style="color:#b48ead;"><h3>Julius</h3><span style="font-size:10px;color:#777">Chrono-Stasis Bubble</span></div>
+            </div>
+            <button onclick="goToStageSelect()" style="border-color:#4c566a; font-size:12px; padding:6px 16px;">← Back to Stages</button>
+        </div>
+    </div>
+
+    <!-- Active Gameplay Layout -->
+    <canvas id="gameCanvas" width="860" height="390"></canvas>
+    <div class="ui-buttons">
+        <button onclick="handleAction('attack')" style="border-color:#4c566a;">Attack [J / Space]</button>
+        <button onclick="handleAction('special')" style="border-color:#2e8b57; color:#a3be8c;">Special [K]</button>
+        <button onclick="handleAction('ult')" style="border-color:#bf616a; color:#ff5555;">Ultimate [L]</button>
+        <button onclick="returnToMenu()" style="border-color:#d08770; color:#ebcb8b;">Main Menu [R]</button>
     </div>
 </div>
 
@@ -66,196 +145,105 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-const GROUND_Y = 320;
+const GROUND_Y = 330;
+const GRAVITY = 0.5;
 let screenShake = 0;
+let isPlaying = false;
+let currentStageIndex = 0;
 
-// Character Roster Profiles matching your concepts
+// Dynamic Roster Core Configurations
 const ROSTER = [
-    {
-        name: "Noelle Silva",
-        color: "#5e81ac",
-        ultName: "WATER CREATION: SEA DRAGON'S ROAR",
-        ultQuote: '"I am royalty of the Clover Kingdom! Sea Dragon\'s Majestic Roar!"',
-        weaponType: "spear",
-        ultType: "dragon"
-    },
-    {
-        name: "Asta",
-        color: "#bf616a",
-        ultName: "BLACK METEORITE",
-        ultQuote: '"Even without magical powers... I will become the Wizard King! Black Meteorite!"',
-        weaponType: "greatsword",
-        ultType: "dash"
-    }
+    { name: "Goku", color: "#ff9400", ultName: "SUPER KAMEHAMEHA CONTINUOUS CANNON", quote: '"Ka... Me... Ha... Me... HAAAA!"', ultType: "beam" },
+    { name: "Luffy", color: "#ffffff", ultName: "BAJRANG GUN METEOR", quote: '"I can do everything I wanted to do! Gear 5!"', ultType: "impact" },
+    { name: "Asta", color: "#bf616a", ultName: "BLACK METEORITE", quote: '"My magic is never giving up!"', ultType: "dash" },
+    { name: "Julius Novachrono", color: "#b48ead", ultName: "CHRONO-STASIS TIME CAPSULE", quote: '"In the flow of time, speed is everything."', ultType: "time" }
 ];
 
-let activeFighterIndex = 0;
+let p1Index = 0;
+let p2Index = 1;
 
-// Game State Values
-let p1 = { x: 200, y: GROUND_Y, vx: 0, vy: 0, health: 908, maxHealth: 1000, sp: 100, isGrounded: true };
-let p2 = { x: 600, y: GROUND_Y, health: 1000, maxHealth: 1000, sp: 29 };
+// Actors State Registers
+let p1 = { x: 200, y: GROUND_Y, vx: 0, vy: 0, health: 1000, sp: 0, grounded: true, attackTime: 0, timeFrozen: false };
+let p2 = { x: 660, y: GROUND_Y, vx: 0, vy: 0, health: 1000, sp: 0, grounded: true, attackTime: 0, aiTimer: 0, timeFrozen: false };
 
-// Cinematic Banner State Controls
-let cinematic = { active: false, timer: 0, title: "", quote: "", bannerColor: "#ff0000" };
+let cinematic = { active: false, timer: 0, title: "", quote: "", color: "#fff", attacker: null };
 
-// Controls Event Hooks
-window.addEventListener('keydown') , (e) => {
-    if (cinematic.active) return; // Freeze simulation during ult cutscenes
-    if (e.key === 'a' || e.key === 'ArrowLeft') p1.vx = -4;
-    if (e.key === 'd' || e.key === 'ArrowRight') p1.vx = 4;
-    if ((e.key === 'w' || e.key === 'ArrowUp') && p1.isGrounded) {
-        p1.vy = -12;
-        p1.isGrounded = false;
-    }
-    if (e.key === ' ' || e.key === 'j') triggerMove('attack');
-    if (e.key === 'k') triggerMove('special');
-    if (e.key === 'l') triggerMove('ult');
+// Navigation Bindings
+window.addEventListener('keydown', (e) => {
+    if (!isPlaying || cinematic.active || p1.health <= 0) return;
+    if (e.key === 'a' || e.key === 'ArrowLeft') p1.vx = -4.5;
+    if (e.key === 'd' || e.key === 'ArrowRight') p1.vx = 4.5;
+    if ((e.key === 'w' || e.key === 'ArrowUp') && p1.grounded) { p1.vy = -12; p1.grounded = false; }
+    if (e.key === ' ' || e.key === 'j') handleAction('attack');
+    if (e.key === 'k') handleAction('special');
+    if (e.key === 'l') handleAction('ult');
+    if (e.key === 'r' || e.key === 'R') returnToMenu();
 });
-
 window.addEventListener('keyup', (e) => {
     if (e.key === 'a' || e.key === 'ArrowLeft' || e.key === 'd' || e.key === 'ArrowRight') p1.vx = 0;
 });
 
-function switchCharacter() {
-    activeFighterIndex = (activeFighterIndex + 1) % ROSTER.length;
+function setStage(idx) {
+    currentStageIndex = idx;
+    document.getElementById('stage0').classList.toggle('active', idx === 0);
+    document.getElementById('stage1').classList.toggle('active', idx === 1);
+}
+function goToFighterSelect() {
+    document.getElementById('stageSelectSection').style.display = 'none';
+    document.getElementById('fighterSelectSection').style.display = 'block';
+}
+function goToStageSelect() {
+    document.getElementById('fighterSelectSection').style.display = 'none';
+    document.getElementById('stageSelectSection').style.display = 'block';
+}
+function startGame(idx) {
+    p1Index = idx;
+    p2Index = (idx + 1) % ROSTER.length; // Assign separate bot fighter
+    document.getElementById('gameMenu').style.display = 'none';
+    
+    // Clear and restore parameters
+    p1 = { x: 220, y: GROUND_Y, vx: 0, vy: 0, health: 1000, sp: 0, grounded: true, attackTime: 0, timeFrozen: false };
+    p2 = { x: 640, y: GROUND_Y, vx: 0, vy: 0, health: 1000, sp: 0, grounded: true, attackTime: 0, aiTimer: 0, timeFrozen: false };
+    cinematic.active = false;
+    isPlaying = true;
+}
+function returnToMenu() {
+    isPlaying = false;
+    document.getElementById('gameMenu').style.display = 'flex';
+    goToStageSelect();
 }
 
-function triggerMove(type) {
-    let char = ROSTER[activeFighterIndex];
-    if (type === 'attack') {
-        p1.sp = Math.min(100, p1.sp + 10);
-        if (Math.abs(p1.x - p2.x) < 80) p2.health = Math.max(0, p2.health - 25);
+function handleAction(type) {
+    if (!isPlaying || cinematic.active || p1.health <= 0) return;
+    let profile = ROSTER[p1Index];
+
+    if (type === 'attack' && p1.attackTime <= 0) {
+        p1.attackTime = 14;
+        p1.sp = Math.min(100, p1.sp + 14);
+        if (Math.abs(p1.x - p2.x) < 85 && Math.abs(p1.y - p2.y) < 60) {
+            p2.health = Math.max(0, p2.health - 20);
+            p2.sp = Math.min(100, p2.sp + 8);
+        }
     }
-    if (type === 'special') {
-        p1.sp = Math.min(100, p1.sp + 15);
-    }
-    if (type === 'ult') {
-        // Trigger your signature visual cutscene overlay text
-        cinematic.active = true;
-        cinematic.timer = 110;
-        cinematic.title = char.ultName;
-        cinematic.quote = char.ultQuote;
-        cinematic.bannerColor = char.color;
-        screenShake = 14;
-        p2.health = Math.max(0, p2.health - 180);
-    }
-    if (type === 'awaken') {
-        p1.health = 250; // Instantly push into safe low-health awakening threshold
-    }
-}
-
-function drawBackground() {
-    // Stage Mountain Slopes matching your concept screens
-    ctx.fillStyle = "#061310";
-    ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(120, 100); ctx.lineTo(240, GROUND_Y); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(200, GROUND_Y); ctx.lineTo(380, 50); ctx.lineTo(560, GROUND_Y); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(500, GROUND_Y); ctx.lineTo(680, 120); ctx.lineTo(800, GROUND_Y); ctx.fill();
-
-    // Stage ground line
-    ctx.strokeStyle = "#2e8b57";
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(canvas.width, GROUND_Y); ctx.stroke();
-}
-
-function drawHUD() {
-    let currentProfile = ROSTER[activeFighterIndex];
-    let opposingProfile = ROSTER[(activeFighterIndex + 1) % ROSTER.length];
-
-    // --- TOP CENTER SPLIT ICON ---
-    ctx.fillStyle = "#1e222a";
-    ctx.beginPath(); ctx.arc(canvas.width/2, 40, 20, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = "#4c566a"; ctx.stroke();
-    ctx.fillStyle = "#e5e9f0"; ctx.font = "bold 10px sans-serif";
-    ctx.fillText(p1.health < 300 ? "AWK" : "VS", canvas.width/2 - 9, 44);
-
-    // --- PLAYER 1 HEADER METRICS ---
-    ctx.fillStyle = "#fff"; ctx.font = "bold 16px sans-serif";
-    ctx.fillText(currentProfile.name, 25, 30);
-    ctx.font = "12px sans-serif";
-    ctx.fillText(`${p1.health} / ${p1.maxHealth}`, 320, 30);
-    
-    // P1 Health Frame bar
-    ctx.fillStyle = "#2e3440"; ctx.fillRect(25, 40, 350, 12);
-    ctx.fillStyle = p1.health < 300 ? "#bf616a" : "#5e81ac"; // Flashes red if awakened low health
-    ctx.fillRect(25, 40, (p1.health / p1.maxHealth) * 350, 12);
-
-    // SP display metric text
-    ctx.fillStyle = "#81a1c1"; ctx.font = "900 11px sans-serif";
-    ctx.fillText(`SP: MAX (${p1.sp})`, 310, 68);
-
-    // --- PLAYER 2 METRICS ---
-    ctx.fillStyle = "#fff"; ctx.font = "bold 16px sans-serif";
-    ctx.fillText(opposingProfile.name, canvas.width - 150, 30);
-    ctx.font = "12px sans-serif";
-    ctx.fillText(`${p2.health} / ${p2.maxHealth}`, canvas.width - 390, 30);
-    
-    // P2 Health bar
-    ctx.fillStyle = "#2e3440"; ctx.fillRect(canvas.width - 375, 40, 350, 12);
-    ctx.fillStyle = "#ff5555"; ctx.fillRect(canvas.width - 375, 40, (p2.health / p2.maxHealth) * 350, 12);
-    
-    ctx.fillStyle = "#81a1c1"; ctx.fillText(`SP: MAX (${p2.sp})`, canvas.width - 370, 68);
-}
-
-function drawFighters() {
-    let profile = ROSTER[activeFighterIndex];
-
-    // Draw Player 1 (User Character)
-    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 4; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.arc(p1.x, p1.y - 50, 10, 0, Math.PI*2); ctx.stroke(); // Head
-    ctx.beginPath(); ctx.moveTo(p1.x, p1.y - 40); ctx.lineTo(p1.x, p1.y - 15); ctx.stroke(); // Spine
-    ctx.beginPath(); ctx.moveTo(p1.x, p1.y - 30); ctx.lineTo(p1.x - 15, p1.y - 20); ctx.stroke(); // Arm
-    ctx.beginPath(); ctx.moveTo(p1.x, p1.y - 15); ctx.lineTo(p1.x - 10, p1.y); ctx.stroke(); // Leg 1
-    ctx.beginPath(); ctx.moveTo(p1.x, p1.y - 15); ctx.lineTo(p1.x + 10, p1.y); ctx.stroke(); // Leg 2
-
-    // Dynamic Weapon overlays based on chosen concept character profile
-    ctx.strokeStyle = profile.color; ctx.lineWidth = 3;
-    ctx.beginPath();
-    if(profile.weaponType === "spear") {
-        ctx.moveTo(p1.x - 20, p1.y - 15); ctx.lineTo(p1.x + 30, p1.y - 35);
-    } else if(profile.weaponType === "greatsword") {
-        ctx.moveTo(p1.x + 5, p1.y - 40); ctx.lineTo(p1.x + 25, p1.y - 10);
-    }
-    ctx.stroke();
-
-    // Draw Player 2 (Target Dummy Fighter)
-    ctx.strokeStyle = "#ff9999"; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(p2.x, p2.y - 50, 10, 0, Math.PI*2); ctx.stroke(); // Head
-    ctx.beginPath(); ctx.moveTo(p2.x, p2.y - 40); ctx.lineTo(p2.x, p2.y - 15); ctx.stroke(); // Spine
-    ctx.beginPath(); ctx.moveTo(p2.x, p2.y - 30); ctx.lineTo(p2.x + 15, p1.y - 20); ctx.stroke(); // Arm
-    ctx.beginPath(); ctx.moveTo(p2.x, p2.y - 15); ctx.lineTo(p2.x - 10, p2.y); ctx.stroke(); // Leg 1
-    ctx.beginPath(); ctx.moveTo(p2.x, p2.y - 15); ctx.lineTo(p2.x + 10, p2.y); ctx.stroke(); // Leg 2
-}
-
-function drawCinematic() {
-    if (!cinematic.active) return;
-    
-    // Draw cinematic letterboxes
-    ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
-    ctx.fillRect(0, 80, canvas.width, 140);
-    
-    // Colored accents matching current character theme
-    ctx.fillStyle = cinematic.bannerColor;
-    ctx.fillRect(0, 80, canvas.width, 4);
-    ctx.fillRect(0, 216, canvas.width, 4);
-    
-    // Ultimate Title text output
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "black italic 24px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(cinematic.title, canvas.width / 2, 130);
-    
-    // Dialogue quotes matching Black Clover flavor
-    ctx.fillStyle = "#d8dee9";
-    ctx.font = "italic 14px sans-serif";
-    ctx.fillText(cinematic.quote, canvas.width / 2, 175);
-    
-    // Reset alignment settings back to left for other UI steps
-    ctx.textAlign = "left";
-    
-    cinematic.timer--;
-    if (cinematic.timer <= 0) {
-        cinematic.active = false;
+    if (type === 'special') p1.sp = Math.min(100, p1.sp + 25);
+    if (type === 'ult' && p1.sp >= 100) {
+        p1.sp = 0;
+        launchCinematic(profile, p1, p2, 240);
     }
 }
 
-function updateGameLogic() {
+function launchCinematic(prof, user, target, dmg) {
+    cinematic.active = true;
+    cinematic.timer = 110;
+    cinematic.title = prof.ultName;
+    cinematic.quote = prof.quote;
+    cinematic.color = prof.color;
+    cinematic.attacker = user;
+    screenShake = 16;
+    
+    setTimeout(() => {
+        target.health = Math.max(0, target.health - dmg);
+        if (prof.ultType === "time") {
+            target.timeFrozen = true;
+            setTimeout(() => target.timeFrozen = false, 3000); // 3-second freeze window
+        } else {
