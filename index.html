@@ -2,59 +2,115 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Stickman Starter Core</title>
+    <title>Stickman Fight: Ultimate Edition</title>
     <style>
         body {
             margin: 0;
-            background: #111;
+            background: #0f111a;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
             color: white;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
         }
         canvas {
-            border: 2px solid #fff;
-            background: #222;
+            border: 3px solid #3b4252;
+            background: #1e222a;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+        }
+        .controls-hint {
+            margin-top: 15px;
+            color: #a3be8c;
+            font-size: 14px;
+            font-weight: bold;
+            background: rgba(0,0,0,0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
         }
     </style>
 </head>
 <body>
 
-<canvas id="gameCanvas" width="800" height="400"></canvas>
+<canvas id="gameCanvas" width="850" height="400"></canvas>
+<div class="controls-hint">A/D or Arrows: Move | W or Up: Jump | J or Space: Punch | K: ULTIMATE (Requires 100% Ult)</div>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Game Engine Config
 const GRAVITY = 0.5;
 const GROUND_Y = 350;
+let currentLevel = 1;
 
-const keys = {
-    left: false,
-    right: false,
-    up: false
-};
+// Controls
+const keys = { left: false, right: false };
+
+// Player Fighter State
+let p1Health = 100;
+let p1Ult = 0; // Max 100
+const playerAttack = { active: false, timer: 0, range: 45, isUlt: false };
 
 const player = {
-    x: 100,
+    x: 150,
     y: GROUND_Y,
-    vx: 0,
-    vy: 0,
-    speed: 5,
-    jumpForce: 12,
-    isGrounded: false,
-    size: 40 
+    vx: 0, vy: 0,
+    speed: 5, jumpForce: 12,
+    isGrounded: false
 };
 
+// Enemy Fighter State
+let enemyHealth = 100;
+let enemyMaxHealth = 100;
+let enemyUlt = 0;
+const enemyAttack = { active: false, timer: 0, range: 45, isUlt: false };
 
+const enemy = {
+    x: 700,
+    y: GROUND_Y,
+    vx: 0, vy: 0,
+    speed: 2,
+    cooldownTimer: 0,
+    isDead: false
+};
+
+// Visual Effects
+let screenShake = 0;
+
+// Setup Key Handlers
 window.addEventListener('keydown', (e) => {
+    if (p1Health <= 0) return;
+    
     if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
     if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
     if ((e.key === 'ArrowUp' || e.key === 'w') && player.isGrounded) {
         player.vy = -player.jumpForce;
         player.isGrounded = false;
+    }
+    // Basic Punch
+    if (e.key === ' ' || e.key === 'j') {
+        if (!playerAttack.active) {
+            playerAttack.active = true;
+            playerAttack.timer = 10;
+            playerAttack.isUlt = false;
+            p1Ult = Math.min(100, p1Ult + 8); // Build Ult on swinging
+            checkCombatCollision(player, enemy, playerAttack.range, true, 12);
+        }
+    }
+    // TRIGGER ULTIMATE (K)
+    if (e.key === 'k' || e.key === 'K') {
+        if (p1Ult >= 100 && !playerAttack.active) {
+            p1Ult = 0;
+            playerAttack.active = true;
+            playerAttack.timer = 25; // Extended animation time
+            playerAttack.isUlt = true;
+            screenShake = 15; // Visual feedback
+            checkCombatCollision(player, enemy, 160, true, 40); // Massive sweep range & damage
+        }
     }
 });
 
@@ -63,215 +119,122 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
 });
 
+// Collision & Damage Solver
+function checkCombatCollision(attacker, defender, range, isPlayerAttacking, damage) {
+    const distance = Math.abs(attacker.x - defender.x);
+    // Dynamic Height Collision Window
+    if (distance <= range && Math.abs(attacker.y - defender.y) < 60) {
+        if (isPlayerAttacking && enemyHealth > 0) {
+            enemyHealth = Math.max(0, enemyHealth - damage);
+            enemyUlt = Math.min(100, enemyUlt + 15); // Enemy gains Ult from taking damage
+            if (playerAttack.isUlt) enemy.vx = (defender.x > attacker.x) ? 15 : -15; // Knockback
+        } else if (!isPlayerAttacking && p1Health > 0) {
+            p1Health = Math.max(0, p1Health - damage);
+            p1Ult = Math.min(100, p1Ult + 20); // Player builds Ult quickly when hit
+            if (enemyAttack.isUlt) player.vx = (defender.x > attacker.x) ? 15 : -15; // Ultimate knockback
+        }
+    }
+}
 
-function update() {
-
+// Logic Ticks
+function updatePlayer() {
     if (keys.left) player.vx = -player.speed;
     else if (keys.right) player.vx = player.speed;
-    else player.vx = 0;
+    else player.vx *= 0.7; // Snappy deceleration
 
     player.x += player.vx;
-
     player.vy += GRAVITY;
     player.y += player.vy;
 
-  
     if (player.y >= GROUND_Y) {
-        player.y = GROUND_Y;
-        player.vy = 0;
-        player.isGrounded = true;
+        player.y = GROUND_Y; player.vy = 0; player.isGrounded = true;
     }
 
-    
     if (player.x < 20) player.x = 20;
     if (player.x > canvas.width - 20) player.x = canvas.width - 20;
 }
 
-
-function drawStickman(x, y) {
-    ctx.strokeStyle = '#00ffcc';
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-
-   
-    ctx.beginPath();
-    ctx.arc(x, y - 60, 12, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(x, y - 48);
-    ctx.lineTo(x, y - 20);
-    ctx.stroke();
-
-
-    ctx.beginPath();
-    ctx.moveTo(x, y - 40);
-   
-    ctx.lineTo(x - 15, y - (keys.left ? 45 : 30));
-    ctx.moveTo(x, y - 40);
-    
-    ctx.lineTo(x + 15, y - (keys.right ? 45 : 30));
-    ctx.stroke();
-
-  
-    ctx.beginPath();
-    ctx.moveTo(x, y - 20);
-   
-    ctx.lineTo(x - 12, y);
-    ctx.moveTo(x, y - 20);
-   
-    ctx.lineTo(x + 12, y);
-    ctx.stroke();
-}
-
-
-function drawEnvironment() {
-    
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, GROUND_Y);
-    ctx.lineTo(canvas.width, GROUND_Y);
-    ctx.stroke();
-}
-
-
-function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    update();
-    drawEnvironment();
-    drawStickman(player.x, player.y);
-
-    requestAnimationFrame(loop);
-}
-
-
-loop()
-let p1Health = 100;
-let enemyHealth = 100;
-
-
-const playerAttack = { active: false, timer: 0, range: 40 };
-const enemyAttack = { active: false, timer: 0, range: 40 };
-
-
-const enemy = {
-    x: 600,
-    y: GROUND_Y,
-    vx: 0,
-    vy: 0,
-    speed: 2,
-    size: 40,
-    state: 'CHASE',
-    cooldownTimer: 0
-};
-
-
-window.addEventListener('keydown', (e) => {
-    if (e.key === ' ' || e.key === 'j') { 
-        if (!playerAttack.active) {
-            playerAttack.active = true;
-            playerAttack.timer = 10;
-            checkCombatCollision(player, enemy, playerAttack.range, true);
-        }
-    }
-});
-
-
-function checkCombatCollision(attacker, defender, range, isPlayerAttacking) {
-    
-    const distance = Math.abs(attacker.x - defender.x);
-    
-   
-    if (distance <= range && Math.abs(attacker.y - defender.y) < 50) {
-        if (isPlayerAttacking) {
-            enemyHealth = Math.max(0, enemyHealth - 15);
-        } else {
-            p1Health = Math.max(0, p1Health - 10);
-        }
-    }
-}
-
-
 function updateEnemyAI() {
-    if (enemyHealth <= 0) return;
+    if (enemyHealth <= 0 || p1Health <= 0) return;
 
+    // Gradual dynamic scaling based on Level setting
+    const scaleSpeed = 2 + (currentLevel * 0.3);
     const distToPlayer = player.x - enemy.x;
     const absDist = Math.abs(distToPlayer);
 
+    // Friction physics for taking heavy knockback hits
+    enemy.vx *= 0.85;
+    enemy.x += enemy.vx;
+
     if (enemy.cooldownTimer > 0) {
         enemy.cooldownTimer--;
-        enemy.vx = 0;
-    } else if (absDist > 35) {
-       
-        enemy.vx = Math.sign(distToPlayer) * enemy.speed;
-        enemy.x += enemy.vx;
     } else {
-       
-        enemy.vx = 0;
-        enemyAttack.active = true;
-        enemyAttack.timer = 15;
-        enemy.cooldownTimer = 45;
-        checkCombatCollision(enemy, player, enemyAttack.range, false);
+        // ULTIMATE READY CHECK (AI logic triggers instantly)
+        if (enemyUlt >= 100 && absDist < 150) {
+            enemyUlt = 0;
+            enemyAttack.active = true;
+            enemyAttack.timer = 30;
+            enemyAttack.isUlt = true;
+            enemy.cooldownTimer = 60;
+            screenShake = 12;
+            checkCombatCollision(enemy, player, 140, false, 30); // Boss smash attack
+            return;
+        }
+
+        // Standard Navigation Movement
+        if (absDist > 40) {
+            enemy.x += Math.sign(distToPlayer) * scaleSpeed;
+        } else {
+            // Close combat strike
+            enemyAttack.active = true;
+            enemyAttack.timer = 12;
+            enemyAttack.isUlt = false;
+            enemy.cooldownTimer = 40 - Math.min(20, currentLevel * 2); // Faster attacks higher levels
+            checkCombatCollision(enemy, player, enemyAttack.range, false, 8 + currentLevel);
+        }
     }
 }
 
-
-function drawUI() {
+// Next Level Progression State Reset
+function advanceLevel() {
+    currentLevel++;
+    enemyMaxHealth = 100 + (currentLevel * 15);
+    enemyHealth = enemyMaxHealth;
+    enemy.x = 700;
+    enemy.y = GROUND_Y;
+    enemy.vx = 0;
+    enemyUlt = 0;
     
-    ctx.fillStyle = '#444';
-    ctx.fillRect(20, 20, 200, 20);
-    ctx.fillStyle = '#00ffcc';
-    ctx.fillRect(20, 20, p1Health * 2, 20);
-    ctx.fillStyle = '#fff';
-    ctx.fillText("PLAYER", 25, 34);
-
-    
-    ctx.fillStyle = '#444';
-    ctx.fillRect(canvas.width - 220, 20, 200, 20);
-    ctx.fillStyle = '#ff3333';
-    ctx.fillRect(canvas.width - 220, 20, enemyHealth * 2, 20);
-    ctx.fillStyle = '#fff';
-    ctx.fillText("AI ENEMY", canvas.width - 215, 34);
-    
-  
-    ctx.font = "24px sans-serif";
-    if (enemyHealth <= 0) {
-        ctx.fillStyle = '#00ffcc';
-        ctx.fillText("VICTORY!", canvas.width / 2 - 50, 100);
-    } else if (p1Health <= 0) {
-        ctx.fillStyle = '#ff3333';
-        ctx.fillText("GAME OVER", canvas.width / 2 - 60, 100);
-    }
+    // Partially heal player as bonus
+    p1Health = Math.min(100, p1Health + 30);
 }
 
+// Visuals Drawing Components
+function drawStickman(x, y, attackState, mainColor, ultColor) {
+    const isAttacking = attackState.active;
+    const isUlt = attackState.isUlt;
 
-function drawEnemy(x, y) {
-    if (enemyHealth <= 0) {
-   
-        ctx.strokeStyle = '#555555';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(x - 20, y); ctx.lineTo(x + 20, y);
-        ctx.stroke();
-        return;
-    }
-
-    ctx.strokeStyle = '#ff3333';
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = (isAttacking && isUlt) ? ultColor : mainColor;
+    ctx.lineWidth = isUlt ? 6 : 4;
     ctx.lineCap = 'round';
 
-  
+    // 1. Head & Body Structure
     ctx.beginPath(); ctx.arc(x, y - 60, 12, 0, Math.PI * 2); ctx.stroke();
-    // Spine
     ctx.beginPath(); ctx.moveTo(x, y - 48); ctx.lineTo(x, y - 20); ctx.stroke();
 
-    
+    // 2. Dynamic Arm Mechanics
     ctx.beginPath();
     ctx.moveTo(x, y - 40);
-    if (enemyAttack.active) {
-        ctx.lineTo(x - 25, y - 40); 
+    if (isAttacking) {
+        let reach = isUlt ? 50 : 25;
+        let direction = (mainColor === '#00ffcc') ? reach : -reach;
+        ctx.lineTo(x + direction, y - 42); // Thrust attack line
+        
+        // Aura burst effect for ultimates
+        if (isUlt) {
+            ctx.fillStyle = ultColor;
+            ctx.beginPath(); ctx.arc(x + direction, y - 42, 15, 0, Math.PI*2); ctx.fill();
+        }
     } else {
         ctx.lineTo(x - 12, y - 25);
     }
@@ -279,35 +242,252 @@ function drawEnemy(x, y) {
     ctx.lineTo(x + 12, y - 25);
     ctx.stroke();
 
-    // Legs
+    // 3. Legs
     ctx.beginPath();
     ctx.moveTo(x, y - 20); ctx.lineTo(x - 12, y);
     ctx.moveTo(x, y - 20); ctx.lineTo(x + 12, y);
     ctx.stroke();
 }
 
+function drawUI() {
+    // Top Level Counter display
+    ctx.font = "bold 20px sans-serif";
+    ctx.fillStyle = "#e5e9f0";
+    ctx.fillText(`STAGE 0${currentLevel}`, canvas.width / 2 - 45, 35);
 
+    // --- PLAYER STAT HUD ---
+    ctx.font = "12px sans-serif";
+    ctx.fillStyle = '#4c566a'; ctx.fillRect(30, 20, 200, 16);
+    ctx.fillStyle = '#00ffcc'; ctx.fillRect(30, 20, p1Health * 2, 16); // Health
+    ctx.fillStyle = '#fff'; ctx.fillText("PLAYER HP", 35, 32);
+
+    ctx.fillStyle = '#4c566a'; ctx.fillRect(30, 42, 200, 8);
+    ctx.fillStyle = '#bf616a'; ctx.fillRect(30, 42, p1Ult * 2, 8); // Ult Bar
+    if(p1Ult >= 100) {
+        ctx.fillStyle = '#fff'; ctx.font = "italic bold 10px sans-serif";
+        ctx.fillText("ULT READY [K]", 240, 50);
+    }
+
+    // --- ENEMY STAT HUD ---
+    ctx.font = "12px sans-serif";
+    ctx.fillStyle = '#4c566a'; ctx.fillRect(canvas.width - 230, 20, 200, 16);
+    ctx.fillStyle = '#ff3333'; ctx.fillRect(canvas.width - 230, 20, (enemyHealth / enemyMaxHealth) * 200, 16);
+    ctx.fillStyle = '#fff'; ctx.fillText(`AI FOE (LVL ${currentLevel})`, canvas.width - 225, 32);
+
+    ctx.fillStyle = '#4c566a'; ctx.fillRect(canvas.width - 230, 42, 200, 8);
+    ctx.fillStyle = '#b48ead'; ctx.fillRect(canvas.width - 230, 42, enemyUlt * 2, 8); // Enemy Ult bar
+
+    // Game Finished states announcements
+    ctx.font = "bold 36px sans-serif";
+    if (p1Health <= 0) {
+        ctx.fillStyle = '#bf616a';
+        ctx.fillText("GAME OVER", canvas.width / 2 - 100, 180);
+        ctx.font = "16px sans-serif";
+        ctx.fillText("Refresh the browser to try again.", canvas.width / 2 - 110, 215);
+    }
+}
+
+// Main Frame Run loop
 function loop() {
+    // Dynamic Camera Effects
+    ctx.save();
+    if (screenShake > 0) {
+        let dx = (Math.random() - 0.5) * screenShake;
+        let dy = (Math.random() - 0.5) * screenShake;
+        ctx.translate(dx, dy);
+        screenShake *= 0.9; // Decay over time
+        if (screenShake < 0.5) screenShake = 0;
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-   
+    // Timers
+    if (playerAttack.active) { playerAttack.timer--; if(playerAttack.timer <= 0) playerAttack.active = false; }
+// ==========================================
+// 1. NEW CONFIGURATION & STATE METRICS
+// ==========================================
+let currentLevel = 1;
+let p1Health = 100;
+let p1Ult = 0; // Max 100
+let enemyHealth = 100;
+let enemyMaxHealth = 100;
+let enemyUlt = 0; // Max 100
+
+const playerAttack = { active: false, timer: 0, range: 45, isUlt: false };
+const enemyAttack = { active: false, timer: 0, range: 45, isUlt: false };
+
+const enemy = {
+    x: 700, y: GROUND_Y,
+    vx: 0, vy: 0,
+    speed: 2, cooldownTimer: 0
+};
+
+let screenShake = 0; // Camera shake intensity
+
+// Add to your keydown event listener
+window.addEventListener('keydown', (e) => {
+    if (p1Health <= 0) return;
+    
+    // Regular attack updates your Ult meter
+    if (e.key === ' ' || e.key === 'j') {
+        if (!playerAttack.active) {
+            playerAttack.active = true;
+            playerAttack.timer = 10;
+            playerAttack.isUlt = false;
+            p1Ult = Math.min(100, p1Ult + 8); 
+            checkCombatCollision(player, enemy, playerAttack.range, true, 12);
+        }
+    }
+    // TRIGGER ULTIMATE (K)
+    if (e.key === 'k' || e.key === 'K') {
+        if (p1Ult >= 100 && !playerAttack.active) {
+            p1Ult = 0;
+            playerAttack.active = true;
+            playerAttack.timer = 25; 
+            playerAttack.isUlt = true;
+            screenShake = 15; 
+            checkCombatCollision(player, enemy, 160, true, 40); // Big range and damage
+        }
+    }
+});
+
+// ==========================================
+// 2. COLLISION & LEVEL PROGRESION LOGIC
+// ==========================================
+function checkCombatCollision(attacker, defender, range, isPlayerAttacking, damage) {
+    const distance = Math.abs(attacker.x - defender.x);
+    if (distance <= range && Math.abs(attacker.y - defender.y) < 60) {
+        if (isPlayerAttacking && enemyHealth > 0) {
+            enemyHealth = Math.max(0, enemyHealth - damage);
+            enemyUlt = Math.min(100, enemyUlt + 15); // Enemy gets ult charge when hit
+            if (playerAttack.isUlt) enemy.vx = (defender.x > attacker.x) ? 15 : -15; // Knockback
+        } else if (!isPlayerAttacking && p1Health > 0) {
+            p1Health = Math.max(0, p1Health - damage);
+            p1Ult = Math.min(100, p1Ult + 20); // Player gets ult charge when hit
+            if (enemyAttack.isUlt) player.vx = (defender.x > attacker.x) ? 15 : -15;
+        }
+    }
+}
+
+function advanceLevel() {
+    currentLevel++;
+    enemyMaxHealth = 100 + (currentLevel * 15);
+    enemyHealth = enemyMaxHealth;
+    enemy.x = 700;
+    enemy.vx = 0;
+    enemyUlt = 0;
+    p1Health = Math.min(100, p1Health + 30); // Survival health bonus
+}
+
+// ==========================================
+// 3. AI STRATEGY & HUD SYSTEMS
+// ==========================================
+function updateEnemyAI() {
+    if (enemyHealth <= 0 || p1Health <= 0) return;
+
+    const scaleSpeed = 2 + (currentLevel * 0.3);
+    const distToPlayer = player.x - enemy.x;
+    const absDist = Math.abs(distToPlayer);
+
+    enemy.vx *= 0.85; // Slow down from knockback
+    enemy.x += enemy.vx;
+
+    if (enemy.cooldownTimer > 0) {
+        enemy.cooldownTimer--;
+    } else {
+        // AI Ultimate Decision
+        if (enemyUlt >= 100 && absDist < 150) {
+            enemyUlt = 0;
+            enemyAttack.active = true;
+            enemyAttack.timer = 30;
+            enemyAttack.isUlt = true;
+            enemy.cooldownTimer = 60;
+            screenShake = 12;
+            checkCombatCollision(enemy, player, 140, false, 30);
+            return;
+        }
+
+        if (absDist > 40) {
+            enemy.x += Math.sign(distToPlayer) * scaleSpeed;
+        } else {
+            enemyAttack.active = true;
+            enemyAttack.timer = 12;
+            enemyAttack.isUlt = false;
+            enemy.cooldownTimer = 40 - Math.min(20, currentLevel * 2);
+            checkCombatCollision(enemy, player, enemyAttack.range, false, 8 + currentLevel);
+        }
+    }
+}
+
+function drawUI() {
+    ctx.font = "bold 20px sans-serif";
+    ctx.fillStyle = "#e5e9f0";
+    ctx.fillText(`STAGE 0${currentLevel}`, canvas.width / 2 - 45, 35);
+
+    // Player HUD Elements
+    ctx.font = "12px sans-serif";
+    ctx.fillStyle = '#4c566a'; ctx.fillRect(30, 20, 200, 16);
+    ctx.fillStyle = '#00ffcc'; ctx.fillRect(30, 20, p1Health * 2, 16);
+    ctx.fillStyle = '#4c566a'; ctx.fillRect(30, 42, 200, 8);
+    ctx.fillStyle = '#bf616a'; ctx.fillRect(30, 42, p1Ult * 2, 8);
+
+    // Enemy HUD Elements
+    ctx.fillStyle = '#4c566a'; ctx.fillRect(canvas.width - 230, 20, 200, 16);
+    ctx.fillStyle = '#ff3333'; ctx.fillRect(canvas.width - 230, 20, (enemyHealth / enemyMaxHealth) * 200, 16);
+    ctx.fillStyle = '#4c566a'; ctx.fillRect(canvas.width - 230, 42, 200, 8);
+    ctx.fillStyle = '#b48ead'; ctx.fillRect(canvas.width - 230, 42, enemyUlt * 2, 8);
+}
+
+// ==========================================
+// 4. INTEGRATED GRAPHICS & MAIN LOOP
+// ==========================================
+function drawStickman(x, y, attackState, mainColor, ultColor) {
+    const isAttacking = attackState.active;
+    const isUlt = attackState.isUlt;
+
+    ctx.strokeStyle = (isAttacking && isUlt) ? ultColor : mainColor;
+    ctx.lineWidth = isUlt ? 6 : 4;
+
+    ctx.beginPath(); ctx.arc(x, y - 60, 12, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, y - 48); ctx.lineTo(x, y - 20); ctx.stroke();
+
+    ctx.beginPath(); ctx.moveTo(x, y - 40);
+    if (isAttacking) {
+        let reach = isUlt ? 50 : 25;
+        let direction = (mainColor === '#00ffcc') ? reach : -reach;
+        ctx.lineTo(x + direction, y - 42);
+    } else {
+        ctx.lineTo(x - 12, y - 25);
+    }
+    ctx.moveTo(x, y - 40); ctx.lineTo(x + 12, y - 25); ctx.stroke();
+
+    ctx.beginPath(); ctx.moveTo(x, y - 20); ctx.lineTo(x - 12, y);
+    ctx.moveTo(x, y - 20); ctx.lineTo(x + 12, y); ctx.stroke();
+}
+
+function loop() {
+    ctx.save();
+    if (screenShake > 0) {
+        ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+        screenShake *= 0.9;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     if (playerAttack.active) { playerAttack.timer--; if(playerAttack.timer <= 0) playerAttack.active = false; }
     if (enemyAttack.active) { enemyAttack.timer--; if(enemyAttack.timer <= 0) enemyAttack.active = false; }
 
-   
-    if (p1Health > 0) update(); 
-    updateEnemyAI();
+    if (p1Health > 0) update(); // This calls your original player physics block
+    if (enemyHealth > 0) updateEnemyAI();
+    else advanceLevel();
 
-   
-    drawEnvironment();
-    drawStickman(player.x, player.y);
-    drawEnemy(enemy.x, enemy.y);
+    ctx.strokeStyle = '#4c566a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(canvas.width, GROUND_Y); ctx.stroke();
+
+    if (p1Health > 0) drawStickman(player.x, player.y, playerAttack, '#00ffcc', '#ff9400');
+    if (enemyHealth > 0) drawStickman(enemy.x, enemy.y, enemyAttack, '#ff3333', '#b48ead');
+
     drawUI();
-
+    ctx.restore();
     requestAnimationFrame(loop);
 }
-
-</script>
-
-</body>
-</html>
