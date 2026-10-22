@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Stickman Fight: Ultimate Edition Fixed</title>
+    <title>Stickman Fight: Arcade Edition</title>
     <style>
         body {
             margin: 0;
-            background: #0f111a;
+            background: #0b0d13;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -17,26 +17,27 @@
             user-select: none;
         }
         canvas {
-            border: 3px solid #3b4252;
-            background: #1e222a;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            border-radius: 4px;
+            border: 3px solid #434c5e;
+            background: #1a1c23;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+            border-radius: 6px;
         }
         .controls-hint {
             margin-top: 15px;
             color: #a3be8c;
             font-size: 14px;
             font-weight: bold;
-            background: rgba(0,0,0,0.3);
-            padding: 8px 16px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 18px;
             border-radius: 20px;
+            letter-spacing: 0.5px;
         }
     </style>
 </head>
 <body>
 
 <canvas id="gameCanvas" width="850" height="400"></canvas>
-<div class="controls-hint">A/D or Arrows: Move | W or Up: Jump | J or Space: Punch | K: ULTIMATE (Requires 100% Ult)</div>
+<div class="controls-hint">A/D or Arrows: Move | W or Up: Jump | J or Space: Punch | K: ULTIMATE | R: Instant Restart</div>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
@@ -50,14 +51,17 @@ let currentLevel = 1;
 // Controls Input Trackers
 const keys = { left: false, right: false };
 
+// Particles and VFX System
+let particles = [];
+let screenShake = 0;
+
 // Player Fighter State
 let p1Health = 100;
 let p1Ult = 0; 
 const playerAttack = { active: false, timer: 0, range: 45, isUlt: false };
 
 const player = {
-    x: 150,
-    y: GROUND_Y,
+    x: 150, y: GROUND_Y,
     vx: 0, vy: 0,
     speed: 5, jumpForce: 12,
     isGrounded: false
@@ -70,18 +74,48 @@ let enemyUlt = 0;
 const enemyAttack = { active: false, timer: 0, range: 45, isUlt: false };
 
 const enemy = {
-    x: 700,
-    y: GROUND_Y,
+    x: 700, y: GROUND_Y,
     vx: 0, vy: 0,
     speed: 2,
     cooldownTimer: 0
 };
 
-// Visual Effects
-let screenShake = 0;
+// Spawn Particle Splatters
+function spawnParticles(x, y, color, count = 8, speedMultiplier = 1) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 8 * speedMultiplier,
+            vy: (Math.random() - 0.5) * 8 * speedMultiplier,
+            radius: Math.random() * 3 + 2,
+            alpha: 1,
+            color: color
+        });
+    }
+}
+
+// Full Engine Core State Reset
+function resetGameEngine() {
+    currentLevel = 1;
+    p1Health = 100;
+    p1Ult = 0;
+    enemyMaxHealth = 100;
+    enemyHealth = 100;
+    enemyUlt = 0;
+    player.x = 150; player.y = GROUND_Y; player.vx = 0; player.vy = 0;
+    enemy.x = 700; enemy.y = GROUND_Y; enemy.vx = 0; enemy.vy = 0;
+    particles = [];
+    screenShake = 0;
+}
 
 // Setup Key Handlers
 window.addEventListener('keydown', (e) => {
+    if (e.key === 'r' || e.key === 'R') {
+        resetGameEngine();
+        return;
+    }
+
     if (p1Health <= 0) return;
     
     if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
@@ -118,18 +152,31 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
 });
 
-// Collision Engine
+// Collision Engine with Particle Hook
 function checkCombatCollision(attacker, defender, range, isPlayerAttacking, damage) {
     const distance = Math.abs(attacker.x - defender.x);
     if (distance <= range && Math.abs(attacker.y - defender.y) < 60) {
+        let midX = (attacker.x + defender.x) / 2;
+        let midY = defender.y - 40;
+
         if (isPlayerAttacking && enemyHealth > 0) {
             enemyHealth = Math.max(0, enemyHealth - damage);
             enemyUlt = Math.min(100, enemyUlt + 15); 
-            if (playerAttack.isUlt) enemy.vx = (defender.x > attacker.x) ? 15 : -15; 
+            if (playerAttack.isUlt) {
+                enemy.vx = (defender.x > attacker.x) ? 16 : -16; 
+                spawnParticles(midX, midY, '#ff9400', 25, 2);
+            } else {
+                spawnParticles(midX, midY, '#ff3333', 10, 1);
+            }
         } else if (!isPlayerAttacking && p1Health > 0) {
             p1Health = Math.max(0, p1Health - damage);
             p1Ult = Math.min(100, p1Ult + 20); 
-            if (enemyAttack.isUlt) player.vx = (defender.x > attacker.x) ? 15 : -15; 
+            if (enemyAttack.isUlt) {
+                player.vx = (defender.x > attacker.x) ? 16 : -16; 
+                spawnParticles(midX, midY, '#b48ead', 25, 2);
+            } else {
+                spawnParticles(midX, midY, '#00ffcc', 10, 1);
+            }
         }
     }
 }
@@ -190,6 +237,7 @@ function updateEnemyAI() {
 }
 
 function advanceLevel() {
+    spawnParticles(enemy.x, GROUND_Y - 30, '#ff3333', 30, 1.5);
     currentLevel++;
     enemyMaxHealth = 100 + (currentLevel * 15);
     enemyHealth = enemyMaxHealth;
@@ -198,6 +246,26 @@ function advanceLevel() {
     enemy.vx = 0;
     enemyUlt = 0;
     p1Health = Math.min(100, p1Health + 30);
+}
+
+// Render Backdrop Layout
+function drawBackgroundEnvironment() {
+    // Cyber City Building Outlines
+    ctx.fillStyle = '#222631';
+    ctx.fillRect(60, 180, 90, 170);
+    ctx.fillRect(200, 120, 110, 230);
+    ctx.fillRect(400, 200, 80, 150);
+    ctx.fillRect(570, 140, 100, 210);
+    ctx.fillRect(720, 220, 70, 130);
+
+    // Neon Horizon Accent Line
+    ctx.strokeStyle = '#2e3440';
+    ctx.lineWidth = 1;
+    for(let i = GROUND_Y; i < canvas.height; i += 12) {
+        ctx.beginPath();
+        ctx.moveTo(0, i); ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+    }
 }
 
 // Drawing Functions
@@ -209,6 +277,12 @@ function drawStickman(x, y, attackState, mainColor, ultColor) {
     ctx.lineWidth = isUlt ? 6 : 4;
     ctx.lineCap = 'round';
 
+    // Glow Filter setup for action frames
+    if (isAttacking) {
+        ctx.shadowBlur = isUlt ? 15 : 6;
+        ctx.shadowColor = isUlt ? ultColor : mainColor;
+    }
+
     // Head & Spine
     ctx.beginPath(); ctx.arc(x, y - 60, 12, 0, Math.PI * 2); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x, y - 48); ctx.lineTo(x, y - 20); ctx.stroke();
@@ -217,14 +291,9 @@ function drawStickman(x, y, attackState, mainColor, ultColor) {
     ctx.beginPath();
     ctx.moveTo(x, y - 40);
     if (isAttacking) {
-        let reach = isUlt ? 50 : 25;
+        let reach = isUlt ? 55 : 28;
         let direction = (mainColor === '#00ffcc') ? reach : -reach;
         ctx.lineTo(x + direction, y - 42); 
-        
-        if (isUlt) {
-            ctx.fillStyle = ultColor;
-            ctx.beginPath(); ctx.arc(x + direction, y - 42, 15, 0, Math.PI*2); ctx.fill();
-        }
     } else {
         ctx.lineTo(x - 12, y - 25);
     }
@@ -237,81 +306,39 @@ function drawStickman(x, y, attackState, mainColor, ultColor) {
     ctx.moveTo(x, y - 20); ctx.lineTo(x - 12, y);
     ctx.moveTo(x, y - 20); ctx.lineTo(x + 12, y);
     ctx.stroke();
+    
+    // Clear shadow state
+    ctx.shadowBlur = 0;
+}
+
+// Particle Engine Updates
+function updateAndDrawParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.1; // Small particle gravity drop
+        p.alpha -= 0.02;
+
+        if (p.alpha <= 0) {
+            particles.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
 }
 
 function drawUI() {
-    ctx.font = "bold 20px sans-serif";
-    ctx.fillStyle = "#e5e9f0";
-    ctx.fillText(`STAGE 0${currentLevel}`, canvas.width / 2 - 45, 35);
+    ctx.font = "bold 22px sans-serif";
+    ctx.fillStyle = "#81a1c1";
+    ctx.fillText(`STAGE 0${currentLevel}`, canvas.width / 2 - 48, 38);
 
     // Player HUD
-    ctx.font = "12px sans-serif";
-    ctx.fillStyle = '#4c566a'; ctx.fillRect(30, 20, 200, 16);
-    ctx.fillStyle = '#00ffcc'; ctx.fillRect(30, 20, p1Health * 2, 16); 
-    ctx.fillStyle = '#fff'; ctx.fillText("PLAYER HP", 35, 32);
-
-    ctx.fillStyle = '#4c566a'; ctx.fillRect(30, 42, 200, 8);
-    ctx.fillStyle = '#bf616a'; ctx.fillRect(30, 42, p1Ult * 2, 8); 
-    if(p1Ult >= 100) {
-        ctx.fillStyle = '#fff'; ctx.font = "italic bold 10px sans-serif";
-        ctx.fillText("ULT READY [K]", 240, 50);
-    }
-
-    // Enemy HUD
-    ctx.font = "12px sans-serif";
-    ctx.fillStyle = '#4c566a'; ctx.fillRect(canvas.width - 230, 20, 200, 16);
-    ctx.fillStyle = '#ff3333'; ctx.fillRect(canvas.width - 230, 20, (enemyHealth / enemyMaxHealth) * 200, 16);
-    ctx.fillStyle = '#fff'; ctx.fillText(`AI FOE (LVL ${currentLevel})`, canvas.width - 225, 32);
-
-    ctx.fillStyle = '#4c566a'; ctx.fillRect(canvas.width - 230, 42, 200, 8);
-    ctx.fillStyle = '#b48ead'; ctx.fillRect(canvas.width - 230, 42, enemyUlt * 2, 8); 
-
-    if (p1Health <= 0) {
-        ctx.font = "bold 36px sans-serif";
-        ctx.fillStyle = '#bf616a';
-        ctx.fillText("GAME OVER", canvas.width / 2 - 100, 180);
-    }
-}
-
-// Main Frame Run loop
-function loop() {
-    ctx.save();
-    if (screenShake > 0) {
-        ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
-        screenShake *= 0.9;
-        if (screenShake < 0.5) screenShake = 0;
-    }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Timers
-    if (playerAttack.active) { playerAttack.timer--; if(playerAttack.timer <= 0) playerAttack.active = false; }
-    if (enemyAttack.active) { enemyAttack.timer--; if(enemyAttack.timer <= 0) enemyAttack.active = false; }
-
-    // Logic Ticks
-    if (p1Health > 0) updatePlayer();
-    if (enemyHealth > 0) {
-        updateEnemyAI();
-    } else {
-        advanceLevel();
-    }
-
-    // Ground line
-    ctx.strokeStyle = '#4c566a'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(canvas.width, GROUND_Y); ctx.stroke();
-
-    // Render Characters
-    if (p1Health > 0) drawStickman(player.x, player.y, playerAttack, '#00ffcc', '#ff9400');
-    if (enemyHealth > 0) drawStickman(enemy.x, enemy.y, enemyAttack, '#ff3333', '#b48ead');
-
-    drawUI();
-    ctx.restore();
-
-    requestAnimationFrame(loop);
-}
-
-// Start game
-loop();
-</script>
-</body>
-</html>
+    ctx.font = "bold 11px sans-serif";
