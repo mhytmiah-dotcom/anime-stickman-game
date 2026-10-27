@@ -236,7 +236,10 @@ function shade(hex, k) {
 
 /* ---------------- main fighter render ---------------- */
 function drawFighter(f, baseX, baseY) {
-  const D = f.data, L = D.look || {}, P = poseOf(f);
+  const D = f.data, L = D.look || {};
+  const target = poseOf(f);
+  f.cur = blendPose(f.cur, target, poseRate(f));
+  const P = f.cur;
   if (f.hide && !f.phoenixActive) return;
   if (f.phoenixActive) { drawPhoenix(f, baseX, baseY); return; }
 
@@ -277,10 +280,13 @@ function drawFighter(f, baseX, baseY) {
   /* torso */
   const neckX = Math.sin(P.lean) * LIMB.torso;
   const neckY = -Math.cos(P.lean) * LIMB.torso;
+  const spineBend = Math.sin(P.lean * 1.8) * 4;
   ctx.strokeStyle = 'rgba(6,9,16,.55)'; ctx.lineWidth = lw * 1.12 + 3.2; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(neckX, neckY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(neckX * .5 + spineBend, neckY * .5, neckX, neckY); ctx.stroke();
   ctx.strokeStyle = body; ctx.lineWidth = lw * 1.12;
-  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(neckX, neckY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(neckX * .5 + spineBend, neckY * .5, neckX, neckY); ctx.stroke();
   if (L.robe || L.belt) {
     ctx.strokeStyle = L.robe || L.belt; ctx.lineWidth = lw * 1.14;
     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(neckX * .45, neckY * .45); ctx.stroke();
@@ -290,6 +296,7 @@ function drawFighter(f, baseX, baseY) {
   const sh = { x: neckX * .92, y: neckY * .92 };
   const bArm = limbPts(sh.x, sh.y, P.bA[0], P.bA[1], LIMB.up, LIMB.fore);
   drawLimb(bArm, back, lw * .92);
+  drawHand(bArm, P.bA[0] + P.bA[1], back, lw * .74, f.animT + 2);
   if (L.gloves || L.gauntlets) drawGlove(bArm.ex, bArm.ey, shade(L.gloves || L.gauntlets, .8), s, .85);
 
   /* two-handed weapons rest behind the head, so they never cut across the face */
@@ -313,6 +320,7 @@ function drawFighter(f, baseX, baseY) {
   /* front arm + weapon */
   const fArm = limbPts(sh.x, sh.y, P.fA[0], P.fA[1], LIMB.up, LIMB.fore);
   drawLimb(fArm, body, lw);
+  drawHand(fArm, P.fA[0] + P.fA[1], body, lw * .8, f.animT);
   if (L.gloves || L.gauntlets) drawGlove(fArm.ex, fArm.ey, L.gloves || L.gauntlets, s);
   if (D.weapon && D.weapon !== 'fists' && !f.noWeapon && !restWeapon) {
     const staffRest = D.weapon === 'staff' && !f.atk && !f.ult;
@@ -324,6 +332,16 @@ function drawFighter(f, baseX, baseY) {
   }
   if (f.demon > 0) drawDemonMarks(headX, headY, s, P);
   if (f.frozen > 0) drawIceBlock(s);
+  if (f.state !== 'ko') {
+    const wx = lx => cx + (f.face || 1) * s * lx;
+    const wy = ly => cy + s * (hipY + P.bob + ly);
+    f._joints = {
+      fh: { x: wx(fArm.ex), y: wy(fArm.ey) },
+      bh: { x: wx(bArm.ex), y: wy(bArm.ey) },
+      ff: { x: wx(fLeg.ex), y: wy(fLeg.ey) },
+      bf: { x: wx(bLeg.ex), y: wy(bLeg.ey) }
+    };
+  }
   if (f.hurtFlash > 0) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
@@ -351,10 +369,12 @@ function drawLimb(l, color, lw) {
 
 function drawFoot(l, color, s, L) {
   ctx.save();
-  ctx.strokeStyle = L.boots ? L.boots : shade(typeof color === 'string' && color[0] === '#' ? color : '#888', .9);
-  ctx.lineWidth = 6.5 * s;
-  ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(l.ex - 2 * s, l.ey); ctx.lineTo(l.ex + 7 * s, l.ey); ctx.stroke();
+  const col = L.boots ? L.boots : shade(typeof color === 'string' && color[0] === '#' ? color : '#888', .9);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(6,9,16,.5)'; ctx.lineWidth = 8.5 * s;
+  ctx.beginPath(); ctx.moveTo(l.ex - 2 * s, l.ey); ctx.lineTo(l.ex + 7 * s, l.ey); ctx.lineTo(l.ex + 10 * s, l.ey + 2.4 * s); ctx.stroke();
+  ctx.strokeStyle = col; ctx.lineWidth = 6 * s;
+  ctx.beginPath(); ctx.moveTo(l.ex - 2 * s, l.ey); ctx.lineTo(l.ex + 7 * s, l.ey); ctx.lineTo(l.ex + 10 * s, l.ey + 2.4 * s); ctx.stroke();
   ctx.restore();
 }
 
@@ -924,4 +944,80 @@ function drawGhost(f, g, a) {
   ctx.beginPath(); ctx.moveTo(sh.x, sh.y); ctx.lineTo(fArm.jx, fArm.jy); ctx.lineTo(fArm.ex, fArm.ey); ctx.stroke();
   ctx.beginPath(); ctx.arc(neckX + Math.sin(P.lean) * LIMB.neck, neckY - Math.cos(P.lean) * LIMB.neck, 11 * s, 0, TAU); ctx.fill();
   ctx.restore();
+}
+
+/* ---------------- pose blending (fluid, overlapping motion) ---------------- */
+function clonePose(t) {
+  return {
+    lean: t.lean, bob: t.bob, headTilt: t.headTilt, headX: t.headX,
+    fA: [t.fA[0], t.fA[1]], bA: [t.bA[0], t.bA[1]],
+    fL: [t.fL[0], t.fL[1]], bL: [t.bL[0], t.bL[1]]
+  };
+}
+
+function blendPose(prev, t, a) {
+  if (!prev) return clonePose(t);
+  const L = (x, y) => x + (y - x) * a;
+  return {
+    lean: L(prev.lean, t.lean), bob: L(prev.bob, t.bob),
+    headTilt: L(prev.headTilt, t.headTilt), headX: L(prev.headX, t.headX),
+    fA: [L(prev.fA[0], t.fA[0]), L(prev.fA[1], t.fA[1])],
+    bA: [L(prev.bA[0], t.bA[0]), L(prev.bA[1], t.bA[1])],
+    fL: [L(prev.fL[0], t.fL[0]), L(prev.fL[1], t.fL[1])],
+    bL: [L(prev.bL[0], t.bL[0]), L(prev.bL[1], t.bL[1])]
+  };
+}
+
+/* how fast the body catches up to the target pose (per state) */
+function poseRate(f) {
+  if (f.state === 'ko') return 0.18;
+  if (f.state === 'stun') return 0.3;
+  if (f.ult) return 0.42;
+  if (f.atk) {
+    const k = f.atkT / f.atkDur;
+    if (k > 0.26 && k < 0.66) return 0.82;  // snap on the strike
+    return 0.5;
+  }
+  if (f.dashT > 0) return 0.7;
+  if (f.airY > 0) return 0.32;
+  if (f.landT > 0) return 0.55;
+  if (f.walking) return 0.4;
+  return 0.26;
+}
+
+/* tapered motion smear between two world points */
+function drawSmear(a, b, w, color, alpha) {
+  if (!a || !b) return;
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 6) return;
+  const nx = -dy / len, ny = dx / len;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = alpha;
+  const g = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+  g.addColorStop(0, hexA(color, 0));
+  g.addColorStop(.55, hexA(color, .45));
+  g.addColorStop(1, hexA(color, .85));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(a.x + nx * w * .25, a.y + ny * w * .25);
+  ctx.lineTo(b.x + nx * w, b.y + ny * w);
+  ctx.lineTo(b.x - nx * w, b.y - ny * w);
+  ctx.lineTo(a.x - nx * w * .25, a.y - ny * w * .25);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/* hand with a wrist joint (adds a little overlap/flick on fast swings) */
+function drawHand(arm, angle, color, lw, phase) {
+  const a = angle - 0.55 + Math.sin(phase * .19) * .06;
+  const hx = arm.ex + Math.sin(a) * 8;
+  const hy = arm.ey + Math.cos(a) * 8;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(6,9,16,.5)'; ctx.lineWidth = lw + 2.6;
+  ctx.beginPath(); ctx.moveTo(arm.ex, arm.ey); ctx.lineTo(hx, hy); ctx.stroke();
+  ctx.strokeStyle = color; ctx.lineWidth = lw;
+  ctx.beginPath(); ctx.moveTo(arm.ex, arm.ey); ctx.lineTo(hx, hy); ctx.stroke();
 }

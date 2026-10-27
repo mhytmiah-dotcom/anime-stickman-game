@@ -23,6 +23,16 @@ Open `index.html` in any modern browser — no build step, no dependencies.
 * Tap **punch repeatedly** for a **3-hit chain**: jab → jab → heavy finisher (more damage, bigger hitstop).
 * Attacks **lunge** forward, so you can convert a read into a hit from just outside range.
 
+### Motion system
+
+* **More joints:** hip → spine (curved) → shoulders → elbow → wrist → hand, and hip → knee → ankle → toe.
+* **Smooth blending:** every fighter keeps a *current* pose that eases toward the target pose each
+  frame (fast ease on the strike frame, soft ease for idle/walk), so nothing pops between states.
+* **Overlapping action:** wrists flick, feet roll through the toe, the spine bows, and cloth/hair
+  keep their own lag — limbs no longer move as one rigid block.
+* **Motion smears:** each fast-moving hand/foot leaves a tapered light ribbon (strongest on strikes,
+  dashes and ultimates), plus the dash speed-ghosts.
+
 ### Hit detection
 
 Fighters are hit with **body boxes** (head to feet), not a single point, so low kicks,
