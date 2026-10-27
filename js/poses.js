@@ -10,8 +10,7 @@ function poseOf(f) {
   const p = {
     lean: .06, bob: 0, headTilt: 0, headX: 0,
     fA: [.30, .38], bA: [-.24, .42],
-    fL: [.20, -.17], bL: [-.16, .20],
-    alpha: 1
+    fL: [.20, -.17], bL: [-.16, .20]
   };
   const t = f.animT;
 
@@ -51,8 +50,8 @@ function poseOf(f) {
         break;
       }
       case 'crouch':
-        p.lean = 0.34; p.bob = 12;
-        p.fL = [0.72, -1.18]; p.bL = [-0.42, -1.05];
+        p.lean = 0.34;
+        p.fL = [0.62, -1.28]; p.bL = [-0.5, -1.1];
         p.fA = [0.95, 0.5]; p.bA = [0.65, 0.65];
         p.headTilt = -0.16;
         break;
@@ -71,7 +70,7 @@ function poseOf(f) {
         p.headTilt = -0.28;
         break;
       case 'slam':
-        p.lean = 0.2; p.bob = 0;
+        p.lean = 0.2;
         p.fA = [1.02, 0.2]; p.bA = [0.78, 0.36];
         p.fL = [0.55, -0.75]; p.bL = [-0.55, 0.1];
         p.headTilt = -0.1;
@@ -90,54 +89,131 @@ function poseOf(f) {
         p.headTilt = -0.1 + a * 0.1;
         break;
       }
+      case 'slam':
+        break;
     }
+    return p;
+  }
+
+  /* ---- dash ---- */
+  if (f.dashT > 0) {
+    p.lean = 0.42; p.headTilt = .1;
+    p.fA = [-1.05, .5]; p.bA = [-1.5, .55];
+    p.fL = [.78, -.48]; p.bL = [-.72, -.3];
+    p.headX = 2;
     return p;
   }
 
   /* ---- attacks ---- */
   if (f.atk) {
     const k = f.atkT / f.atkDur;
+    if (f.atk === 'airkick') {
+      const a = easeInOut(clamp(k * 1.4, 0, 1));
+      p.lean = .1 + a * .2;
+      p.fL = [.35 + a * .75, -.5 + a * .3];
+      p.bL = [-.5 - a * .1, -.95];
+      p.fA = [1.1, .5]; p.bA = [-1.5 + a * .2, .6];
+      p.headTilt = -.1;
+      return p;
+    }
     if (f.atk === 'punch') {
-      if (k < 0.34) { const a = easeOut(k / .34); p.fA = [.3 - a * .85, .38 + a * 1.25]; p.lean = -.06 - a * .12; p.bA = [-.2, .55]; }
-      else if (k < 0.62) { const a = easeOut((k - .34) / .28); p.fA = [-.55 + a * 2.0, 1.63 - a * 1.55]; p.lean = -.18 + a * .42; p.bA = [-.8, .7]; p.bob = -a * 2; }
-      else { const a = (k - .62) / .38; p.fA = [1.45 - a * 1.1, .08 + a * .5]; p.lean = .24 - a * .18; p.bA = [-.5, .6]; }
+      if (k < 0.3) {
+        const a = easeOut(k / .3);
+        p.fA = [.3 - a * .9, .38 + a * 1.05]; p.lean = -.06 - a * .17;
+        p.bA = [-.25 - a * .25, .5]; p.headX = a * 3;
+      } else if (k < 0.55) {
+        const a = easeOut((k - .3) / .25);
+        p.fA = [-.6 + a * 2.05, 1.43 - a * 1.36]; p.lean = -.23 + a * .42;
+        p.bA = [-.5 - a * .3, .6]; p.headX = 3 - a * 5;
+      } else {
+        const a = (k - .55) / .45;
+        p.fA = [1.45 - a * 1.05, .07 + a * .45]; p.lean = .19 - a * .13;
+        p.bA = [-.8 + a * .4, .6]; p.headX = -2 + a * 2;
+      }
       p.fL = [.3, -.24]; p.bL = [-.26, .3];
+      return p;
+    }
+    /* kick */
+    if (k < 0.34) {
+      const a = easeOut(k / .34);
+      p.bL = [.1 + a * .55, -.3 - a * 1.0];
+      p.lean = -.08 - a * .08;
+      p.fA = [.5, .5]; p.bA = [-.5, .6];
+      p.fL = [.22 + a * .1, -.2];
+    } else if (k < 0.63) {
+      const a = easeOut((k - .34) / .29);
+      p.bL = [.65 + a * .8, -1.3 + a * 1.15];
+      p.lean = -.16 - a * .24;
+      p.fA = [.9 + a * .3, .5]; p.bA = [-.9, .6];
+      p.fL = [.3 + a * .12, -.24];
     } else {
-      if (k < 0.36) { const a = easeOut(k / .36); p.bL = [.1 + a * .5, -.3 - a * .9]; p.lean = -.08 - a * .06; p.fA = [.5, .5]; p.bA = [-.5, .6]; }
-      else if (k < 0.66) { const a = easeOut((k - .36) / .3); p.bL = [.6 + a * .75, -1.2 + a * 1.1]; p.lean = -.14 - a * .22; p.fA = [.9, .5]; p.bA = [-.9, .6]; p.bob = -a * 4; }
-      else { const a = (k - .66) / .34; p.bL = [1.35 - a * 1.0, -.1 - a * .2]; p.lean = -.36 + a * .3; p.fA = [.6, .5]; p.bA = [-.6, .6]; }
-      p.fL = [.26, -.2];
+      const a = (k - .63) / .37;
+      p.bL = [1.45 - a * 1.05, -.15 - a * .2];
+      p.lean = -.4 + a * .32;
+      p.fA = [1.2 - a * .7, .5]; p.bA = [-.7, .6];
+      p.fL = [.42 - a * .1, -.26];
     }
     return p;
   }
 
-  /* ---- movement ---- */
-  if (f.airY > 0 || f.vy > 0.4) {
-    const rise = clamp(f.vy / 12, -1, 1);
-    p.lean = .1;
-    p.fL = [.8 + rise * .25, -1.0]; p.bL = [-.35 - rise * .3, -.85];
-    p.fA = [2.1, .5]; p.bA = [-1.5, .6];
-    p.headTilt = -.12;
+  /* ---- airborne ---- */
+  if (f.airY > 0) {
+    const v = f.vy;
+    if (f.jumpT < 5) {
+      p.lean = .26; p.headTilt = -.1;
+      p.fL = [.55, -1.15]; p.bL = [-.5, -1.05];
+      p.fA = [2.35, .35]; p.bA = [2.05, .45];
+    } else if (v > 4) {
+      p.lean = .12; p.headTilt = -.06;
+      p.fL = [.35, -.62]; p.bL = [-.52, -.5];
+      p.fA = [2.5, .3]; p.bA = [-1.9, .5];
+    } else if (v > -4) {
+      p.lean = .05;
+      p.fL = [.72, -.5]; p.bL = [-.7, -.42];
+      p.fA = [2.2, .5]; p.bA = [-2.0, .6];
+      p.headTilt = .02;
+    } else {
+      p.lean = -.06; p.headTilt = .12;
+      p.fL = [.95, -.25]; p.bL = [-.35, -.78];
+      p.fA = [1.6, .5]; p.bA = [-1.4, .6];
+    }
     return p;
   }
 
+  /* ---- landing squash ---- */
+  if (f.landT > 0) {
+    const k = f.landT / 12;
+    p.lean = .2 * k;
+    p.fL = [.3 + .55 * k, -.2 - 1.15 * k];
+    p.bL = [-.2 - .45 * k, .24 - 1.0 * k];
+    p.fA = [.35 + .5 * k, .45 + .25 * k];
+    p.bA = [-.3 - .3 * k, .5 + .3 * k];
+    p.headTilt = .12 * k;
+    return p;
+  }
+
+  /* ---- walk ---- */
   if (f.walking) {
     const w = f.walkPhase;
     const s = Math.sin(w), c = Math.cos(w);
-    p.fL = [s * .62, -.1 - Math.max(0, -s) * .85];
-    p.bL = [-s * .62, -.1 - Math.max(0, s) * .85];
-    p.fA = [-s * .5, .35];
-    p.bA = [s * .5, .35];
-    p.bob = Math.abs(c) * 2.6 - 1.3;
-    p.lean = .12;
-    p.headTilt = -.05;
+    p.fL = [s * .62, -.12 - Math.max(0, -s) * .95];
+    p.bL = [-s * .62, -.12 - Math.max(0, s) * .95];
+    p.fA = [-s * .5, .5 + Math.max(0, s) * .3];
+    p.bA = [s * .5, .5 + Math.max(0, -s) * .3];
+    p.lean = .16;
+    p.headX = s * 1.4;
+    p.headTilt = -.05 + Math.sin(w * 2) * .025;
+    p.bob = 0;
     return p;
   }
 
-  p.bob = Math.sin(t * .055) * 1.8;
-  p.fA = [.3 + Math.sin(t * .055) * .05, .4];
-  p.bA = [-.24 - Math.sin(t * .055) * .05, .44];
+  /* ---- idle ---- */
+  const br = Math.sin(t * .055);
+  p.bob = br * 1.6;
+  p.fA = [.3 + br * .06, .4];
+  p.bA = [-.24 - br * .06, .44];
   p.headTilt = Math.sin(t * .04) * .04;
+  p.headX = Math.sin(t * .03) * 1.2;
   return p;
 }
 
@@ -201,7 +277,9 @@ function drawFighter(f, baseX, baseY) {
   /* torso */
   const neckX = Math.sin(P.lean) * LIMB.torso;
   const neckY = -Math.cos(P.lean) * LIMB.torso;
-  ctx.strokeStyle = body; ctx.lineWidth = lw * 1.12; ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(6,9,16,.55)'; ctx.lineWidth = lw * 1.12 + 3.2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(neckX, neckY); ctx.stroke();
+  ctx.strokeStyle = body; ctx.lineWidth = lw * 1.12;
   ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(neckX, neckY); ctx.stroke();
   if (L.robe || L.belt) {
     ctx.strokeStyle = L.robe || L.belt; ctx.lineWidth = lw * 1.14;
@@ -213,6 +291,14 @@ function drawFighter(f, baseX, baseY) {
   const bArm = limbPts(sh.x, sh.y, P.bA[0], P.bA[1], LIMB.up, LIMB.fore);
   drawLimb(bArm, back, lw * .92);
   if (L.gloves || L.gauntlets) drawGlove(bArm.ex, bArm.ey, shade(L.gloves || L.gauntlets, .8), s, .85);
+
+  /* two-handed weapons rest behind the head, so they never cut across the face */
+  const twoHanded = (D.weapon === 'axe' || D.weapon === 'greatsword');
+  const restWeapon = twoHanded && !f.atk && !f.ult && !f.noWeapon;
+  if (restWeapon) {
+    if (D.weapon === 'greatsword') drawWeaponAt(f, D, sh.x - 4 * s, sh.y + 22 * s, 3.42, s);
+    else drawWeaponAt(f, D, sh.x - 10 * s, sh.y + 10 * s, 3.52, s);
+  }
   if (L.mantle) drawMantle(L, P, s);
 
   /* head */
@@ -228,10 +314,9 @@ function drawFighter(f, baseX, baseY) {
   const fArm = limbPts(sh.x, sh.y, P.fA[0], P.fA[1], LIMB.up, LIMB.fore);
   drawLimb(fArm, body, lw);
   if (L.gloves || L.gauntlets) drawGlove(fArm.ex, fArm.ey, L.gloves || L.gauntlets, s);
-  if (D.weapon && D.weapon !== 'fists' && !f.noWeapon) {
-    const resting = !f.atk && !f.ult && (D.weapon === 'axe' || D.weapon === 'greatsword' || D.weapon === 'staff');
-    if (resting && D.weapon === 'greatsword') drawWeaponAt(f, D, sh.x - 6 * s, sh.y + 16, 3.62, s);
-    else if (resting) drawWeaponAt(f, D, fArm.ex, fArm.ey + 3 * s, Math.PI, s);
+  if (D.weapon && D.weapon !== 'fists' && !f.noWeapon && !restWeapon) {
+    const staffRest = D.weapon === 'staff' && !f.atk && !f.ult;
+    if (staffRest) drawWeaponAt(f, D, fArm.ex, fArm.ey + 3 * s, Math.PI, s);
     else drawWeaponAt(f, D, fArm.ex, fArm.ey, P.fA[0] + P.fA[1], s);
   }
   if (L.grimoire) {
@@ -255,7 +340,12 @@ function drawFighter(f, baseX, baseY) {
 }
 
 function drawLimb(l, color, lw) {
-  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // soft dark outline so fighters pop off the night stage
+  ctx.strokeStyle = 'rgba(6,9,16,.55)';
+  ctx.lineWidth = lw + 3.2;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(l.jx, l.jy); ctx.lineTo(l.ex, l.ey); ctx.stroke();
+  ctx.strokeStyle = color; ctx.lineWidth = lw;
   ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(l.jx, l.jy); ctx.lineTo(l.ex, l.ey); ctx.stroke();
 }
 
@@ -805,5 +895,33 @@ function drawIceBlock(s) {
   ctx.moveTo(-18 * s, -104 * s); ctx.lineTo(4 * s, -60 * s); ctx.lineTo(30 * s, -40 * s);
   ctx.moveTo(-32 * s, -52 * s); ctx.lineTo(4 * s, -60 * s); ctx.lineTo(20 * s, 0);
   ctx.stroke();
+  ctx.restore();
+}
+
+/* speed-trail silhouette (dash / fast movement) */
+function drawGhost(f, g, a) {
+  const s = f.scale || 1;
+  const P = poseOf(f);
+  ctx.save();
+  ctx.globalAlpha = clamp(a, 0, 1) * .3;
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.translate(g.x, g.y - (g.airY || 0));
+  ctx.scale((g.face || 1) * s, s);
+  const fLeg = limbPts(0, 0, P.fL[0], P.fL[1], LIMB.thigh, LIMB.shin);
+  const bLeg = limbPts(0, 0, P.bL[0], P.bL[1], LIMB.thigh, LIMB.shin);
+  const hipY = -Math.max(fLeg.ey, bLeg.ey);
+  ctx.translate(0, hipY);
+  const neckX = Math.sin(P.lean) * LIMB.torso;
+  const neckY = -Math.cos(P.lean) * LIMB.torso;
+  ctx.strokeStyle = f.data.accent;
+  ctx.lineWidth = 9 * s;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(fLeg.jx, fLeg.jy); ctx.lineTo(fLeg.ex, fLeg.ey); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(bLeg.jx, bLeg.jy); ctx.lineTo(bLeg.ex, bLeg.ey); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(neckX, neckY); ctx.stroke();
+  const sh = { x: neckX * .92, y: neckY * .92 };
+  const fArm = limbPts(sh.x, sh.y, P.fA[0], P.fA[1], LIMB.up, LIMB.fore);
+  ctx.beginPath(); ctx.moveTo(sh.x, sh.y); ctx.lineTo(fArm.jx, fArm.jy); ctx.lineTo(fArm.ex, fArm.ey); ctx.stroke();
+  ctx.beginPath(); ctx.arc(neckX + Math.sin(P.lean) * LIMB.neck, neckY - Math.cos(P.lean) * LIMB.neck, 11 * s, 0, TAU); ctx.fill();
   ctx.restore();
 }
