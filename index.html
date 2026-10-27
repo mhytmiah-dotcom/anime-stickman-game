@@ -1,168 +1,411 @@
-import pygame
-import math
-import random
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Stickman Fight</title>
+<style>
+  body { margin: 0; background: #1a1a2e; display: flex; justify-content: center; align-items: center; height: 100vh; }
+  canvas { background: #16213e; }
+</style>
+</head>
+<body>
+<canvas id="game" width="800" height="400"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
 
-# Initialize pygame
-pygame.init()
+// Game state
+let keys = {};
+let screenShake = 0;
+let particles = [];
+let roundTime = 99;
 
-# Screen dimensions
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Stick Man Fighting Game")
+// Player class
+class Fighter {
+  constructor(x, y, facing, color, controls) {
+    this.x = x; this.y = y; this.vx = 0; this.vy = 0;
+    this.facing = facing;
+    this.color = color;
+    this.controls = controls;
+    this.width = 30; this.height = 80;
+    this.health = 100;
+    this.state = 'idle';
+    this.stateTime = 0;
+    this.attack = null;
+    this.grounded = false;
+  }
 
-# Colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-GREEN = (0, 255, 0)
-YELLOW = (255, 255, 0)
-ORANGE = (255, 165, 0)
+  get rect() {
+    return { x: this.x - this.width/2, y: this.y - this.height, w: this.width, h: this.height };
+  }
 
-# Game variables
-clock = pygame.time.Clock()
-FPS = 60
+  update(dt, opponent) {
+    this.stateTime += dt;
+    this.grounded = this.y >= 400;
 
-class StickMan:
-    def __init__(self, x, y, color, controls):
-        self.x = x
-        self.y = y
-        self.color = color
-        self.controls = controls  # Dictionary with keys for movement
-        self.width = 30
-        self.height = 60
-        self.health = 100
-        self.max_health = 100
-        self.vel_x = 0
-        self.vel_y = 0
-        self.speed = 5
-        self.jump_power = 15
-        self.on_ground = True
-        self.facing = 1  # 1 for right, -1 for left
-        self.animation_frame = 0
-        self.animation_timer = 0
-        self.is_attacking = False
-        self.attack_timer = 0
-        self.is_blocking = False
-        self.hit_cooldown = 0
-        
-    def update(self, platforms):
-        # Apply gravity
-        if not self.on_ground:
-            self.vel_y += 0.8
-        
-        # Update position
-        self.x += self.vel_x
-        self.y += self.vel_y
-        
-        # Platform collision
-        self.on_ground = False
-        for platform in platforms:
-            if (self.x < platform.x + platform.width and
-                self.x + self.width > platform.x and
-                self.y + self.height > platform.y and
-                self.y + self.height < platform.y + platform.height + 10 and
-                self.vel_y > 0):
-                self.y = platform.y - self.height
-                self.vel_y = 0
-                self.on_ground = True
-        
-        # Boundary checking
-        if self.x < 0:
-            self.x = 0
-        if self.x > WIDTH - self.width:
-            self.x = WIDTH - self.width
-        if self.y > HEIGHT - self.height:
-            self.y = HEIGHT - self.height
-            self.vel_y = 0
-            self.on_ground = True
-            
-        # Update animations
-        self.animation_timer += 1
-        if self.animation_timer >= 5:
-            self.animation_frame = (self.animation_frame + 1) % 4
-            self.animation_timer = 0
-            
-        # Update attack timer
-        if self.is_attacking:
-            self.attack_timer -= 1
-            if self.attack_timer <= 0:
-                self.is_attacking = False
-                
-        # Update hit cooldown
-        if self.hit_cooldown > 0:
-            self.hit_cooldown -= 1
-            
-        # Reset velocity
-        self.vel_x = 0
-        
-    def move_left(self):
-        self.vel_x = -self.speed
-        self.facing = -1
-        
-    def move_right(self):
-        self.vel_x = self.speed
-        self.facing = 1
-        
-    def jump(self):
-        if self.on_ground:
-            self.vel_y = -self.jump_power
-            self.on_ground = False
-            
-    def attack(self):
-        if not self.is_attacking:
-            self.is_attacking = True
-            self.attack_timer = 15
-            
-    def block(self):
-        self.is_blocking = True
-        
-    def stop_block(self):
-        self.is_blocking = False
-        
-    def take_damage(self, damage):
-        if self.hit_cooldown <= 0:
-            self.health -= damage
-            self.hit_cooldown = 30
-            return True
-        return False
-            
-    def draw(self, screen):
-        # Draw health bar
-        bar_width = 100
-        bar_height = 10
-        health_ratio = self.health / self.max_health
-        pygame.draw.rect(screen, RED, (self.x, self.y - 20, bar_width, bar_height))
-        pygame.draw.rect(screen, GREEN, (self.x, self.y - 20, bar_width * health_ratio, bar_height))
-        
-        # Draw stick man based on animation frame
-        if self.is_blocking:
-            # Blocking animation
-            pygame.draw.circle(screen, self.color, (int(self.x + self.width//2), int(self.y + 10)), 8)
-            pygame.draw.line(screen, self.color, (self.x + self.width//2, self.y + 18), (self.x + self.width//2, self.y + 40), 3)
-            pygame.draw.line(screen, self.color, (self.x + self.width//2, self.y + 40), (self.x + self.width//2 - 15, self.y + 60), 3)
-            pygame.draw.line(screen, self.color, (self.x + self.width//2, self.y + 40), (self.x + self.width//2 + 15, self.y + 60), 3)
-            pygame.draw.line(screen, self.color, (self.x + self.width//2 - 15, self.y + 60), (self.x + self.width//2, self.y + 50), 3)
-            pygame.draw.line(screen, self.color, (self.x + self.width//2 + 15, self.y + 60), (self.x + self.width//2, self.y + 50), 3)
-        elif self.is_attacking:
-            # Attack animation
-            pygame.draw.circle(screen, self.color, (int(self.x + self.width//2), int(self.y + 10)), 8)
-            pygame.draw.line(screen, self.color, (self.x + self.width//2, self.y + 18), (self.x + self.width//2, self.y + 40), 3)
-            if self.facing == 1:
-                # Right attack
-                pygame.draw.line(screen, self.color, (self.x + self.width//2, self.y + 40), (self.x + self.width//2 + 30, self.y + 30), 3)
-            else:
-                # Left attack
-                pygame.draw.line(screen, self.color, (self.x + self.width//2, self.y + 40), (self.x + self.width//2 - 30, self.y + 30), 3)
-            pygame.draw.line(screen, self.color, (self.x + self.width//2, self.y + 40), (self.x + self.width//2 - 10, self.y + 60), 3)
-            pygame.draw.line(screen, self.color, (self.x + self.width//2, self.y + 40), (self.x + self.width//2 + 10, self.y + 60), 3)
-        else:
-            # Regular walking animation
-            arm_offset = 0
-            if self.animation_frame % 2 == 0:
-                arm_offset = 5
-            else:
-                arm_offset = -5
-                
-            pygame.draw.circle(screen, self.color, (int(self.x + self.width//2), int(self.y + 10)), 8)
-            pygame.draw.line(screen, self.color, (self.x + self.width//2, self.y + 1
+    // Movement
+    const speed = 150;
+    if (this.state === 'idle' || this.state === 'walk') {
+      let moveX = 0;
+      if (keys[this.controls.left]) moveX -= 1;
+      if (keys[this.controls.right]) moveX += 1;
+      this.vx = moveX * speed;
+      if (moveX !== 0) {
+        this.facing = moveX > 0 ? 1 : -1;
+        this.state = 'walk';
+      } else if (this.state !== 'walk') {
+        this.state = 'idle';
+      }
+    } else if (this.state === 'hit') {
+      this.vx *= 0.9;
+    } else {
+      this.vx *= 0.7;
+    }
+
+    // Apply velocity
+    this.x += this.vx * dt;
+    // Gravity
+    const gravity = 800;
+    this.vy += gravity * dt;
+    this.y += this.vy * dt;
+    if (this.y >= 400) {
+      this.y = 400;
+      this.vy = 0;
+    }
+
+    // State transitions
+    switch (this.state) {
+      case 'punch':
+        if (this.stateTime > 0.3) this.state = 'idle';
+        break;
+      case 'kick':
+        if (this.stateTime > 0.4) this.state = 'idle';
+        break;
+      case 'hit':
+        if (this.stateTime > 0.3) this.state = 'idle';
+        break;
+    }
+
+    // Attack input
+    if (this.state === 'idle' || this.state === 'walk') {
+      if (keys[this.controls.punch]) {
+        this.startAttack('punch');
+      } else if (keys[this.controls.kick]) {
+        this.startAttack('kick');
+      }
+    }
+  }
+
+  startAttack(type) {
+    this.state = type;
+    this.stateTime = 0;
+    this.attack = type;
+  }
+
+  getAttackHitbox() {
+    if (!this.attack) return null;
+    const reach = 40;
+    const yOffset = this.attack === 'punch' ? -20 : 0;
+    const w = reach;
+    const h = this.attack === 'punch' ? 15 : 20;
+    const x = this.x + this.facing * (this.width/2 + w/2);
+    const y = this.y - this.height/2 + yOffset;
+    return { x, y, w, h };
+  }
+
+  takeHit(attackHitbox) {
+    // Simple collision check
+    const rect = this.rect;
+    if (attackHitbox &&
+        rect.x < attackHitbox.x + attackHitbox.w &&
+        rect.x + rect.w > attackHitbox.x &&
+        rect.y < attackHitbox.y + attackHitbox.h &&
+        rect.y + rect.h > attackHitbox.y) {
+      const damage = 8;
+      this.health -= damage;
+      this.state = 'hit';
+      this.stateTime = 0;
+      // Knockback
+      this.vx = (this.facing === 1) ? -100 : 100;
+      this.vy = -50;
+      // Hit particles
+      spawnHitParticles(rect.x + rect.w/2, rect.y + 10);
+      screenShake = 5;
+      return true;
+    }
+    return false;
+  }
+
+  draw(poseTime) {
+    const cx = this.x;
+    const cy = this.y;
+
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+
+    // Head
+    const headRadius = 10;
+    const headX = cx;
+    const headY = cy - this.height - headRadius;
+    ctx.beginPath();
+    ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Body
+    const bodyTopY = headY + headRadius;
+    const bodyBottomY = cy - this.height/2;
+    ctx.beginPath();
+    ctx.moveTo(headX, bodyTopY);
+    ctx.lineTo(headX, bodyBottomY);
+    ctx.stroke();
+
+    // Arms and legs based on state
+    const facing = this.facing;
+    const arm = this.getArmPose();
+    const leg = this.getLegPose();
+
+    // Left arm
+    ctx.beginPath();
+    ctx.moveTo(headX, bodyTopY);
+    ctx.lineTo(headX + facing * arm.left[0], bodyTopY + arm.left[1]);
+    ctx.stroke();
+    // Right arm
+    ctx.beginPath();
+    ctx.moveTo(headX, bodyTopY);
+    ctx.lineTo(headX + facing * arm.right[0], bodyTopY + arm.right[1]);
+    ctx.stroke();
+
+    // Left leg
+    ctx.beginPath();
+    ctx.moveTo(headX, bodyBottomY);
+    ctx.lineTo(headX + facing * leg.left[0], bodyBottomY + leg.left[1]);
+    ctx.stroke();
+    // Right leg
+    ctx.beginPath();
+    ctx.moveTo(headX, bodyBottomY);
+    ctx.lineTo(headX + facing * leg.right[0], bodyBottomY + leg.right[1]);
+    ctx.stroke();
+  }
+
+  getArmPose() {
+    const t = this.stateTime;
+    if (this.state === 'punch') {
+      const extend = Math.min(1, t * 5) * 30;
+      const raise = Math.sin(t * 20) * 5;
+      return {
+        left: { x: -20, y: 5 },
+        right: { x: extend, y: -raise }
+      };
+    } else if (this.state === 'kick') {
+      return {
+        left: { x: -20, y: 10 },
+        right: { x: 0, y: 20 }
+      };
+    } else if (this.state === 'walk') {
+      const swing = Math.sin(this.stateTime * 10) * 15;
+      return {
+        left: { x: -swing, y: 5 },
+        right: { x: swing, y: 5 }
+      };
+    } else {
+      return {
+        left: { x: -15, y: 0 },
+        right: { x: 15, y: 0 }
+      };
+    }
+  }
+
+  getLegPose() {
+    const t = this.stateTime;
+    if (this.state === 'punch') {
+      return {
+        left: { x: -10, y: 10 },
+        right: { x: 10, y: 10 }
+      };
+    } else if (this.state === 'kick') {
+      const extend = Math.min(1, t * 5) * 25;
+      const raise = Math.min(1, t * 5) * -10;
+      return {
+        left: { x: -10, y: 10 },
+        right: { x: extend, y: -10 - raise }
+      };
+    } else if (this.state === 'walk') {
+      const swing = Math.sin(this.stateTime * 10) * 15;
+      return {
+        left: { x: -swing, y: 10 },
+        right: { x: swing, y: 10 }
+      };
+    } else {
+      return {
+        left: { x: -10, y: 10 },
+        right: { x: 10, y: 10 }
+      };
+    }
+  }
+}
+
+// Controls
+const p1Controls = { left: 'a', right: 'd', punch: 'f', kick: 'g' };
+const p2Controls = { left: 'arrowleft', right: 'arrowright', punch: 'k', kick: 'l' };
+
+let player1 = new Fighter(200, 400, 1, '#00ff88', p1Controls);
+let player2 = new Fighter(600, 400, -1, '#ff0044', p2Controls);
+
+function spawnHitParticles(x, y) {
+  for (let i = 0; i < 10; i++) {
+    particles.push({
+      x: x,
+      y: y,
+      vx: (Math.random() - 0.5) * 300,
+      vy: -Math.random() * 200,
+      life: Math.random() * 0.5
+    });
+  }
+}
+
+function update(dt) {
+  dt = Math.min(dt, 0.05);
+  roundTime -= dt;
+  if (roundTime <= 0) {
+    roundTime = 0;
+    // Simple reset
+    player1.health = Math.max(0, player1.health - 1);
+    player2.health = Math.max(0, player2.health - 1);
+  }
+
+  player1.update(dt, player2);
+  player2.update(dt, player1);
+
+  // Check attacks
+  const p1Hit = player1.getAttackHitbox();
+  const p2Hit = player2.getAttackHitbox();
+  if (p1Hit) player2.takeHit(p1Hit);
+  if (p2Hit) player1.takeHit(p2Hit);
+
+  // Particles
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 500 * dt;
+    p.life -= dt;
+  });
+
+  // Screen shake
+  if (screenShake > 0) screenShake -= dt * 10;
+  if (screenShake < 0) screenShake = 0;
+
+  // Keep players within bounds
+  player1.x = Math.max(30, Math.min(770, player1.x));
+  player2.x = Math.max(30, Math.min(770, player2.x));
+
+  // Reset round if someone is dead
+  if (player1.health <= 0 || player2.health <= 0) {
+    resetRound();
+  }
+}
+
+function resetRound() {
+  player1 = new Fighter(200, 400, 1, '#00ff88', p1Controls);
+  player2 = new Fighter(600, 400, -1, '#ff0044', p2Controls);
+  roundTime = 99;
+  particles = [];
+  screenShake = 0;
+}
+
+function draw() {
+  ctx.save();
+  if (screenShake > 0) {
+    const shakeX = Math.random() * screenShake - screenShake/2;
+    const shakeY = Math.random() * screenShake - screenShake/2;
+    ctx.translate(shakeX, shakeY);
+  }
+
+  // Clear
+  ctx.fillStyle = '#16213e';
+  ctx.fillRect(0, 0, 800, 400);
+
+  // Ground
+  ctx.strokeStyle = '#0f3460';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 400);
+  ctx.lineTo(800, 400);
+  ctx.stroke();
+
+  // Health bars
+  drawHealthBar(20, 20, player1.health, '#00ff88');
+  drawHealthBar(580, 20, player2.health, '#ff0044', true);
+
+  // Timer
+  ctx.fillStyle = '#fff';
+  ctx.font = '30px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(Math.ceil(roundTime), 400, 50);
+
+  // Draw players
+  player1.draw();
+  player2.draw();
+
+  // Particles
+  particles.forEach(p => {
+    const alpha = p.life > 0 ? p.life / 0.5 : 0;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#ffcc00';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Attack indicators
+  if (player1.attack) drawAttackIndicator(player1);
+  if (player2.attack) drawAttackIndicator(player2);
+
+  ctx.restore();
+}
+
+function drawHealthBar(x, y, health, color, flip = false) {
+  ctx.fillStyle = '#333';
+  ctx.fillRect(x, y, 180, 20);
+  ctx.fillStyle = color;
+  ctx.fillRect(flip ? x + 180 - health * 1.8 : x, y, health * 1.8, 20);
+  ctx.strokeStyle = '#fff';
+  ctx.strokeRect(x, y, 180, 20);
+}
+
+function drawAttackIndicator(fighter) {
+  const hitbox = fighter.getAttackHitbox();
+  if (hitbox) {
+    ctx.strokeStyle = '#ffaa00';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(hitbox.x - hitbox.w/2, hitbox.y - hitbox.h/2, hitbox.w, hitbox.h);
+  }
+}
+
+function gameLoop(timestamp) {
+  const dt = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+  update(dt);
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+let lastTime = 0;
+
+// Input
+window.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  // Prevent scrolling
+  if (['arrowleft','arrowright','arrowup','arrowdown'].includes(e.key.toLowerCase())) e.preventDefault();
+});
+window.addEventListener('keyup', e => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+// Start
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
