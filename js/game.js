@@ -934,6 +934,7 @@ function updateSelect() {
     if (pressed[ci.jump]) navSel(p, 0, -1);
     if (p === 0 && pressed['s']) navSel(p, 0, 1);
     if (p === 1 && pressed['arrowdown']) navSel(p, 0, 1);
+    if (pressed['t']) { STYLE.classic = !STYLE.classic; }
     if (pressed[lockKey] || pressed['enter']) {
       SEL.locked[p] = true;
       const r = tileRect(SEL.c[p]);
@@ -1116,7 +1117,7 @@ function drawSelectHints() {
   ctx.textAlign = 'center';
   ctx.font = '600 12px Trebuchet MS, sans-serif';
   ctx.fillStyle = 'rgba(160,178,208,.6)';
-  ctx.fillText('P1: A / D / W / S to move  ·  F to lock  ·  G to back out        P2: ARROWS to move  ·  K to lock  ·  L to back out', W / 2, H - 8);
+  ctx.fillText('P1: A/D/W/S move · F lock · G back      P2: ARROWS move · K lock · L back      T: ' + (STYLE.classic ? 'classic stickmen ON' : 'classic stickmen OFF'), W / 2, H - 8);
   ctx.restore();
 }
 

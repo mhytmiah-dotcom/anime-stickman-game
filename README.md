@@ -5,6 +5,10 @@ ultimates (E / R), hand-animated skeletons, cloth physics and a lot of VFX.
 
 Open `index.html` in any modern browser — no build step, no dependencies.
 
+**Look:** fighters default to **classic stickmen** (hollow circle head, single-line body and limbs,
+no hair/capes/accessories). Press **T** on the character-select screen to switch to the
+stylised look (hair, capes, masks, grimoire) and back.
+
 ## Controls
 
 | | Move | Jump | Punch | Kick | Ult I (E) | Ult II (R) |

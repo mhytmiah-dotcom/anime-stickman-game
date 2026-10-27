@@ -10,6 +10,9 @@ const H = canvas.height;  // 720
 
 /* ---------------- math ---------------- */
 const TAU = Math.PI * 2;
+
+/* Classic = plain stick figures (no hair/cape/gear). Press T on select to toggle. */
+const STYLE = { classic: true };
 const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
 const lerp = (a, b, t) => a + (b - a) * t;
 const rand = (a, b) => a + Math.random() * (b - a);
