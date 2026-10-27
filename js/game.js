@@ -31,6 +31,7 @@ class Fighter {
     this.comboStep = 1; this.lunge = 0; this.dashT = 0; this.dashDir = 1;
     this.tapDir = 0; this.tapT = -99; this.landT = 0; this.trail = [];
     this.jumpT = 0; this.wasAir = false;
+    this.cur = null; this._joints = null; this._prevJoints = null;
   }
 
   get target() { return this.other; }
@@ -48,6 +49,7 @@ class Fighter {
     this.frozen = 0; this.demon = 0; this.aura = 0; this.invuln = 0;
     this.combo = 0; this.comboT = 0; this.capeLag = 0; this.stun = 0;
     this.comboStep = 1; this.lunge = 0; this.dashT = 0; this.landT = 0; this.trail = []; this.jumpT = 0;
+    this.cur = null; this._joints = null; this._prevJoints = null;
   }
 
   gainMeter(n) {
@@ -729,6 +731,23 @@ function drawFightScene() {
   sg.addColorStop(1, 'rgba(90,140,255,0)');
   ctx.fillStyle = sg; ctx.fillRect(0, GROUND - 160, W, 300);
 
+  for (const f of [G.p1, G.p2]) {
+    if (!f) continue;
+    const cur = f._joints, prev = f._prevJoints;
+    if (cur && prev) {
+      const acc = f.data.accent;
+      const draw = (a, b, w) => {
+        const d = Math.hypot(b.x - a.x, b.y - a.y);
+        if (d < 9) return;
+        drawSmear(a, b, w, f.data.id === 'asta' ? '#ff5a63' : acc, clamp((d - 9) / 70, 0, .5));
+      };
+      draw(prev.fh, cur.fh, 5.5 * (f.scale || 1));
+      draw(prev.bh, cur.bh, 4.2 * (f.scale || 1));
+      draw(prev.ff, cur.ff, 5 * (f.scale || 1));
+      draw(prev.bf, cur.bf, 4.4 * (f.scale || 1));
+    }
+    f._prevJoints = cur;
+  }
   for (const f of [G.p1, G.p2]) {
     if (!f || !f.trail.length) continue;
     for (const g of f.trail) drawGhost(f, g, g.t / 11);
