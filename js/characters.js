@@ -632,7 +632,7 @@ const ROSTER = [
       if (!s.started) {
         s.started = true;
         cam.dark = Math.max(cam.dark, .62);
-        fxMoon({ x: f.x + f.face * 240, y: 160, r: 108, color: '#eef6ff', life: 96 });
+        fxMoon({ x: f.x + f.face * 250, y: 150, r: 104, color: '#eef6ff', life: 96, behind: true });
         flash('#dfe9ff', .22); shake(8);
       }
       const cx = tg ? tg.x : f.x + f.face * 100, cy = tg ? tg.y : f.y;

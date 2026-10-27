@@ -162,28 +162,29 @@ function drawParticles() {
 }
 
 /* ---------------- shapes ---------------- */
-function drawCrescent(x, y, rot, size, color, edge, alpha = 1, thick = 1, band = 0.62) {
+function drawCrescent(x, y, rot, size, color, edge, alpha = 1, thick = 1, band = 0.62, span = 1) {
   const oy = 0.42 * size;
   ctx.save();
   ctx.translate(x, y); ctx.rotate(rot);
   ctx.globalCompositeOperation = 'lighter';
   ctx.globalAlpha = alpha;
+  const cut = (1 - span) * Math.PI / 2;
   const path = () => {
     ctx.beginPath();
-    ctx.arc(0, oy, size, Math.PI, TAU, false);
-    ctx.arc(0, oy, size * band, TAU, Math.PI, true);
+    ctx.arc(0, oy, size, Math.PI + cut, TAU - cut, false);
+    ctx.arc(0, oy, size * band, TAU - cut, Math.PI + cut, true);
     ctx.closePath();
   };
   const g = ctx.createLinearGradient(0, oy - size, 0, oy);
-  g.addColorStop(0, hexA(color, .06));
-  g.addColorStop(.55, hexA(color, .3));
-  g.addColorStop(1, hexA(edge || color, .5));
+  g.addColorStop(0, hexA(color, .05));
+  g.addColorStop(.5, hexA(color, .4));
+  g.addColorStop(1, hexA(edge || color, .62));
   path(); ctx.fillStyle = g; ctx.fill();
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = hexA(edge || color, .7);
-  ctx.lineWidth = 2.2 * thick;
+  ctx.strokeStyle = hexA(edge || color, .55);
+  ctx.lineWidth = 2.0 * thick;
   path(); ctx.stroke();
-  ctx.strokeStyle = hexA('#ffffff', .5);
+  ctx.strokeStyle = hexA('#ffffff', .22);
   ctx.lineWidth = 1 * thick;
   path(); ctx.stroke();
   ctx.restore();
@@ -253,7 +254,7 @@ function drawFx() {
     if (f.kind === 'slash') {
       const p = f.t / f.life;
       const size = f.size * (0.7 + easeOut(p) * 0.6);
-      drawCrescent(f.x, f.y, f.rot + (1 - p) * 0.35, size, f.color, f.edge, a * a, f.thick, 0.8);
+      drawCrescent(f.x, f.y, f.rot + (1 - p) * 0.35, size, f.color, f.edge, a * a, f.thick, 0.82, 0.66);
     } else if (f.kind === 'bolt') {
       if (!f.pts) f.pts = boltPoints(f.fromX == null ? f.x : f.fromX, f.y - f.up, f.x, f.y, 16);
       drawBolt(f.pts, f.color, f.width * a, a);
@@ -385,7 +386,7 @@ function updateProjectiles() {
       }
     }
     const off = p.x < -120 || p.x > W + 120 || p.y < -220 || p.y > H + 80;
-    if (--p.life <= 0 || off || p.hit) projectiles.splice(i, 1);
+    if (--p.life <= 0 || off || p.hit || p.dead) projectiles.splice(i, 1);
   }
 }
 
@@ -531,7 +532,7 @@ function drawAxeShape(cx, cy, ang, metal = '#9aa3b5', glow = '#ffcf5c') {
 
 /* ice spike + moon backdrop effects */
 function fxSpike(o) { fx.push(Object.assign({ kind: 'spike', x: 0, y: 0, t: 0, life: 34, color: '#bfefff', dir: 1, h: 96 }, o)); }
-function fxMoon(o) { fx.push(Object.assign({ kind: 'moon', x: 0, y: 0, t: 0, life: 90, r: 150, color: '#eef6ff' }, o)); }
+function fxMoon(o) { fx.push(Object.assign({ kind: 'moon', x: 0, y: 0, t: 0, life: 90, r: 96, color: '#eef6ff' }, o)); }
 
 const _drawFx2 = drawFx;
 drawFx = function () {
@@ -575,23 +576,8 @@ drawFx = function () {
       ctx.fillStyle = g;
       ctx.fillRect(f.x - f.w, 0, f.w * 2, f.y);
       ctx.restore();
-    } else if (f.kind === 'moon') {
-      const a = Math.min(1, f.t / 12) * Math.min(1, (f.life - f.t) / 20);
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      const g = ctx.createRadialGradient(f.x, f.y, f.r * .2, f.x, f.y, f.r * 1.5);
-      g.addColorStop(0, `rgba(255,255,255,${a * .95})`);
-      g.addColorStop(.62, `rgba(210,236,255,${a * .45})`);
-      g.addColorStop(1, 'rgba(150,200,255,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 1.5, 0, TAU); ctx.fill();
-      ctx.fillStyle = `rgba(255,255,255,${a})`;
-      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.fill();
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = `rgba(170,190,225,${a * .28})`;
-      ctx.beginPath(); ctx.arc(f.x - f.r * .3, f.y - f.r * .2, f.r * .16, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.arc(f.x + f.r * .28, f.y + f.r * .3, f.r * .22, 0, TAU); ctx.fill();
-      ctx.restore();
+    } else if (f.kind === 'moon' && !f.behind) {
+      drawMoonShape(f);
     }
   }
 };
@@ -639,4 +625,28 @@ function drawAxeShape(cx, cy, ang, metal = '#9aa3b5', glow = '#ffcf5c') {
   ctx.fillStyle = '#8d7654';
   ctx.beginPath(); ctx.arc(24, 0, 5, 0, TAU); ctx.fill();
   ctx.restore();
+}
+
+
+function drawMoonShape(f) {
+  const a = Math.min(1, f.t / 12) * Math.min(1, (f.life - f.t) / 20);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createRadialGradient(f.x, f.y, f.r * .2, f.x, f.y, f.r * 1.4);
+  g.addColorStop(0, `rgba(255,255,255,${a * .8})`);
+  g.addColorStop(.6, `rgba(210,236,255,${a * .3})`);
+  g.addColorStop(1, 'rgba(150,200,255,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 1.4, 0, TAU); ctx.fill();
+  ctx.fillStyle = `rgba(246,250,255,${a * .92})`;
+  ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = `rgba(170,190,225,${a * .22})`;
+  ctx.beginPath(); ctx.arc(f.x - f.r * .3, f.y - f.r * .2, f.r * .16, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(f.x + f.r * .28, f.y + f.r * .3, f.r * .22, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+function drawMoonBg() {
+  for (const f of fx) if (f.kind === 'moon' && f.behind) drawMoonShape(f);
 }

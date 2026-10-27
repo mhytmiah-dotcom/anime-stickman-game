@@ -84,6 +84,7 @@ class Fighter {
   }
 
   ko(dir) {
+    if (this.target) this.target.held = false;
     this.state = 'ko'; this.stun = 0; this.ult = null; this.held = false;
     this.phoenixActive = false; this.hide = false;
     this.vx = (dir || 1) * 8; this.vy = 9; this.koRot = 0;
@@ -126,6 +127,10 @@ Fighter.prototype.tryUlt = function (which) {
 };
 
 Fighter.prototype.endUlt = function () {
+  // if a thrown axe is still out, make it come home instantly
+  for (const p of projectiles) {
+    if (p.kind === 'axe' && p.owner === this) { p.dead = true; }
+  }
   this.ult = null; this.ultT = 0; this.ultSnap = {};
   this.airY = 0; this.vy = 0; this.pose = 'windup'; this.poseT = 0;
   this.hide = false; this.alpha = 1; this.noWeapon = false;
@@ -619,6 +624,7 @@ function drawFightScene() {
   ctx.save();
   ctx.translate(cam.shakeX, cam.shakeY);
 
+  drawMoonBg();
   drawShadows();
 
   // stage glow under fighters
@@ -765,12 +771,12 @@ function updateFight() {
 const SEL = { c: [0, 1], locked: [false, false], previews: [], t: 0, startDelay: 0 };
 const GRID = { cols: 4, rows: 2, tw: 236, th: 196, gap: 16 };
 GRID.x0 = (W - (GRID.cols * GRID.tw + (GRID.cols - 1) * GRID.gap)) / 2;
-GRID.y0 = 126;
+GRID.y0 = 134;
 
 function buildPreviews() {
   SEL.previews = ROSTER.map((c, i) => {
     const f = new Fighter(c.id, 0, 1, 0);
-    f.scale = 0.62;
+    f.scale = 0.78;
     f.animT = i * 13;
     f.walking = false;
     return f;
@@ -850,7 +856,7 @@ function drawTile(i, rect) {
   glow.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = glow;
   ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-  drawFighter(pv, rect.x + rect.w / 2, rect.y + rect.h - 42);
+  drawFighter(pv, rect.x + rect.w / 2, rect.y + rect.h - 40);
   ctx.restore();
 
   ctx.textAlign = 'center';

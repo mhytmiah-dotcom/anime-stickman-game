@@ -229,7 +229,7 @@ function drawFighter(f, baseX, baseY) {
   drawLimb(fArm, body, lw);
   if (L.gloves || L.gauntlets) drawGlove(fArm.ex, fArm.ey, L.gloves || L.gauntlets, s);
   if (D.weapon && D.weapon !== 'fists' && !f.noWeapon) {
-    const resting = !f.atk && !f.ult && (D.weapon === 'axe' || D.weapon === 'greatsword');
+    const resting = !f.atk && !f.ult && (D.weapon === 'axe' || D.weapon === 'greatsword' || D.weapon === 'staff');
     if (resting && D.weapon === 'greatsword') drawWeaponAt(f, D, sh.x - 6 * s, sh.y + 16, 3.62, s);
     else if (resting) drawWeaponAt(f, D, fArm.ex, fArm.ey + 3 * s, Math.PI, s);
     else drawWeaponAt(f, D, fArm.ex, fArm.ey, P.fA[0] + P.fA[1], s);
@@ -238,6 +238,7 @@ function drawFighter(f, baseX, baseY) {
     drawGrimoire(f, -neckX * .4 - 26, neckY - 46, s);
   }
   if (f.demon > 0) drawDemonMarks(headX, headY, s, P);
+  if (f.frozen > 0) drawIceBlock(s);
   if (f.hurtFlash > 0) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
@@ -772,5 +773,37 @@ function drawSpirit(f, s) {
     ctx.ellipse(0, 10 * s, rr, rr * .34, Math.sin(t * .04 + i) * .3, 0.2 + i, 2.4 + i);
     ctx.stroke();
   }
+  ctx.restore();
+}
+
+
+function drawIceBlock(s) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createLinearGradient(0, -110 * s, 0, 0);
+  g.addColorStop(0, 'rgba(224,250,255,.85)');
+  g.addColorStop(.6, 'rgba(150,225,255,.55)');
+  g.addColorStop(1, 'rgba(120,200,255,.7)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-26 * s, 0);
+  ctx.lineTo(-32 * s, -52 * s);
+  ctx.lineTo(-18 * s, -104 * s);
+  ctx.lineTo(6 * s, -118 * s);
+  ctx.lineTo(26 * s, -96 * s);
+  ctx.lineTo(30 * s, -40 * s);
+  ctx.lineTo(20 * s, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(235,252,255,.85)';
+  ctx.lineWidth = 1.6 * s;
+  ctx.stroke();
+  // facets
+  ctx.strokeStyle = 'rgba(255,255,255,.4)';
+  ctx.lineWidth = 1 * s;
+  ctx.beginPath();
+  ctx.moveTo(-18 * s, -104 * s); ctx.lineTo(4 * s, -60 * s); ctx.lineTo(30 * s, -40 * s);
+  ctx.moveTo(-32 * s, -52 * s); ctx.lineTo(4 * s, -60 * s); ctx.lineTo(20 * s, 0);
+  ctx.stroke();
   ctx.restore();
 }
