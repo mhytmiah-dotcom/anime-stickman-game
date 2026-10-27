@@ -21,7 +21,7 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);
-for (const f of ['core.js', 'characters.js', 'poses.js', 'game.js']) {
+for (const f of ['core.js', 'characters.js', 'poses.js', 'game.js', 'ai.js']) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', f), 'utf8'), ctx, { filename: f });
 }
 const run = (code) => vm.runInContext(code, ctx, { filename: 'inline' });
