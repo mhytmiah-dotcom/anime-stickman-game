@@ -244,8 +244,9 @@ function drawFighter(f, baseX, baseY) {
   if (f.phoenixActive) { drawPhoenix(f, baseX, baseY); return; }
 
   const s = f.scale || 1;
-  const bulk = L.bulky ? 1.18 : 1;
-  const lw = 7 * bulk * s;
+  const classic = STYLE.classic;
+  const bulk = (L.bulky && !classic) ? 1.18 : 1;
+  const lw = (classic ? 5.4 : 7) * bulk * s;
   const cx = baseX, cy = baseY - f.airY * s;
 
   const fLeg = limbPts(0, 0, P.fL[0], P.fL[1], LIMB.thigh, LIMB.shin);
@@ -270,8 +271,8 @@ function drawFighter(f, baseX, baseY) {
   const back = f.ghost ? '#b9c8ff' : shade(D.color, .62);
 
   /* cape */
-  if (L.cape) drawCape(f, L, P, LIMB);
-  if (L.scarf) drawScarf(f, L, P);
+  if (!classic && L.cape) drawCape(f, L, P, LIMB);
+  if (!classic && L.scarf) drawScarf(f, L, P);
 
   /* back leg */
   drawLimb(bLeg, back, lw);
@@ -287,7 +288,7 @@ function drawFighter(f, baseX, baseY) {
   ctx.strokeStyle = body; ctx.lineWidth = lw * 1.12;
   ctx.beginPath(); ctx.moveTo(0, 0);
   ctx.quadraticCurveTo(neckX * .5 + spineBend, neckY * .5, neckX, neckY); ctx.stroke();
-  if (L.robe || L.belt) {
+  if (!classic && (L.robe || L.belt)) {
     ctx.strokeStyle = L.robe || L.belt; ctx.lineWidth = lw * 1.14;
     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(neckX * .45, neckY * .45); ctx.stroke();
   }
@@ -297,7 +298,7 @@ function drawFighter(f, baseX, baseY) {
   const bArm = limbPts(sh.x, sh.y, P.bA[0], P.bA[1], LIMB.up, LIMB.fore);
   drawLimb(bArm, back, lw * .92);
   drawHand(bArm, P.bA[0] + P.bA[1], back, lw * .74, f.animT + 2);
-  if (L.gloves || L.gauntlets) drawGlove(bArm.ex, bArm.ey, shade(L.gloves || L.gauntlets, .8), s, .85);
+  if (!classic && (L.gloves || L.gauntlets)) drawGlove(bArm.ex, bArm.ey, shade(L.gloves || L.gauntlets, .8), s, .85);
 
   /* two-handed weapons rest behind the head, so they never cut across the face */
   const twoHanded = (D.weapon === 'axe' || D.weapon === 'greatsword');
@@ -306,7 +307,7 @@ function drawFighter(f, baseX, baseY) {
     if (D.weapon === 'greatsword') drawWeaponAt(f, D, sh.x - 4 * s, sh.y + 22 * s, 3.42, s);
     else drawWeaponAt(f, D, sh.x - 10 * s, sh.y + 10 * s, 3.52, s);
   }
-  if (L.mantle) drawMantle(L, P, s);
+  if (!classic && L.mantle) drawMantle(L, P, s);
 
   /* head */
   const headX = neckX + Math.sin(P.lean + P.headTilt) * LIMB.neck;
@@ -321,13 +322,13 @@ function drawFighter(f, baseX, baseY) {
   const fArm = limbPts(sh.x, sh.y, P.fA[0], P.fA[1], LIMB.up, LIMB.fore);
   drawLimb(fArm, body, lw);
   drawHand(fArm, P.fA[0] + P.fA[1], body, lw * .8, f.animT);
-  if (L.gloves || L.gauntlets) drawGlove(fArm.ex, fArm.ey, L.gloves || L.gauntlets, s);
+  if (!classic && (L.gloves || L.gauntlets)) drawGlove(fArm.ex, fArm.ey, L.gloves || L.gauntlets, s);
   if (D.weapon && D.weapon !== 'fists' && !f.noWeapon && !restWeapon) {
     const staffRest = D.weapon === 'staff' && !f.atk && !f.ult;
     if (staffRest) drawWeaponAt(f, D, fArm.ex, fArm.ey + 3 * s, Math.PI, s);
     else drawWeaponAt(f, D, fArm.ex, fArm.ey, P.fA[0] + P.fA[1], s);
   }
-  if (L.grimoire) {
+  if (!classic && L.grimoire) {
     drawGrimoire(f, -neckX * .4 - 26, neckY - 46, s);
   }
   if (f.demon > 0) drawDemonMarks(headX, headY, s, P);
@@ -369,6 +370,12 @@ function drawLimb(l, color, lw) {
 
 function drawFoot(l, color, s, L) {
   ctx.save();
+  if (STYLE.classic) {
+    ctx.strokeStyle = color; ctx.lineWidth = 5 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(l.ex - 1 * s, l.ey); ctx.lineTo(l.ex + 7 * s, l.ey); ctx.stroke();
+    ctx.restore();
+    return;
+  }
   const col = L.boots ? L.boots : shade(typeof color === 'string' && color[0] === '#' ? color : '#888', .9);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.strokeStyle = 'rgba(6,9,16,.5)'; ctx.lineWidth = 8.5 * s;
@@ -384,6 +391,18 @@ function drawHead(f, hx, hy, P, L, D, s, lw) {
   ctx.save();
   ctx.translate(hx, hy);
   ctx.rotate(P.headTilt * .5);
+
+  /* plain stickman head: hollow circle + eye dot */
+  if (STYLE.classic) {
+    const rr = 10.5 * s;
+    ctx.beginPath(); ctx.arc(0, 0, rr, 0, TAU);
+    ctx.fillStyle = '#0a0d16'; ctx.fill();
+    ctx.strokeStyle = D.color; ctx.lineWidth = 4.4 * s; ctx.stroke();
+    ctx.fillStyle = D.color;
+    ctx.beginPath(); ctx.arc(rr * .42, -rr * .08, 1.8 * s, 0, TAU); ctx.fill();
+    ctx.restore();
+    return;
+  }
 
   // neck
   ctx.strokeStyle = D.skin; ctx.lineWidth = 5 * s; ctx.lineCap = 'round';
