@@ -335,7 +335,7 @@ const ROSTER = [
         const cx = f.x + f.face * 60, cy = f.y - f.h * .6;
         fxSlash({ x: cx, y: cy, rot: -1.15 * f.face, size: 130, color: '#12121a', edge: '#ff5a63', thick: 2.4, life: 26 });
         proj({
-          kind: 'darkcrescent', x: cx + f.face * 30, y: cy, owner: f, r: 66, vx: f.face * 12.5,
+          kind: 'darkcrescent', x: cx + f.face * 30, y: cy, owner: f, r: 84, vx: f.face * 12.5,
           dmg: 30, kb: 14, ks: 30, life: 60, color: '#12121a', edge: '#ff5a63'
         });
         flash('#ffffff', .22); shake(14); hitstop(5);

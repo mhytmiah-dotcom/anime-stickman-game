@@ -410,9 +410,20 @@ function drawProjectiles() {
       ctx.beginPath(); ctx.moveTo(p.r, 0); ctx.lineTo(-p.r * .6, p.r * .5); ctx.lineTo(-p.r * .25, 0); ctx.lineTo(-p.r * .6, -p.r * .5);
       ctx.closePath(); ctx.fill(); ctx.stroke();
     } else if (p.kind === 'darkcrescent') {
+      ctx.globalCompositeOperation = 'source-over';
       ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-      drawCrescent(0, 0, 0, p.r, p.color, p.edge, 1, 2.2);
-      drawCrescent(0, 0, 0, p.r * .6, p.edge, '#ffffff', .7, 1);
+      // black anti-magic blade body
+      ctx.beginPath();
+      ctx.arc(0, p.r * .42, p.r, Math.PI, TAU, false);
+      ctx.arc(0, p.r * .42, p.r * .62, TAU, Math.PI, true);
+      ctx.closePath();
+      ctx.fillStyle = '#0b0b12'; ctx.fill();
+      ctx.strokeStyle = '#e8323c'; ctx.lineWidth = 5; ctx.stroke();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = 'rgba(255,90,99,.9)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.globalAlpha = .5;
+      ctx.fillStyle = 'rgba(255,60,80,.35)';
+      ctx.fill();
     } else if (p.kind === 'axe') {
       ctx.translate(p.x, p.y); ctx.rotate(p.rot);
       ctx.scale(1.45, 1.45);

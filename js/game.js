@@ -331,7 +331,7 @@ function startMatch(c1, c2) {
   cam.dark = 0; cam.flash = 0; cam.slow = 0; cam.shake = 0;
   G.p1 = new Fighter(c1, 360, 1, 0);
   G.p2 = new Fighter(c2, W - 360, -1, 1);
-  G.p1.scale = 1.1; G.p2.scale = 1.1;
+  G.p1.scale = 1.3; G.p2.scale = 1.3;
   G.p1.other = G.p2; G.p2.other = G.p1;
   G.p1.ci = CONTROLS[0]; G.p2.ci = CONTROLS[1];
   G.state = 'fight'; G.intro = 1; G.koTimer = 0; G.winner = null;
@@ -469,7 +469,7 @@ function drawFighterHud(f, side) {
   // hp
   const g = ctx.createLinearGradient(x, y, x + bw, y);
   g.addColorStop(0, '#39e58a'); g.addColorStop(.62, '#b8e84a'); g.addColorStop(1, '#ffcf4a');
-  ctx.fillStyle = 'rgba(28,10,16,.85)';
+  ctx.fillStyle = 'rgba(16,9,16,.92)';
   rrect(x, y, bw, bh, 4); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,.06)';
   rrect(x, y, bw, bh, 4); ctx.fill();
@@ -492,15 +492,18 @@ function drawFighterHud(f, side) {
 
   // name
   ctx.font = '900 21px Trebuchet MS, sans-serif';
-  ctx.textAlign = side === 0 ? 'left' : 'right';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = D.accent;
   ctx.shadowColor = D.accent; ctx.shadowBlur = 12;
-  ctx.fillText(D.name, x, y - 12);
+  const nameW = ctx.measureText(D.name).width;
+  if (side === 0) { ctx.textAlign = 'left'; ctx.fillText(D.name, x, y - 12); }
+  else { ctx.textAlign = 'right'; ctx.fillText(D.name, x + bw, y - 12); }
   ctx.shadowBlur = 0;
   ctx.font = '600 11px Trebuchet MS, sans-serif';
   ctx.fillStyle = 'rgba(210,225,255,.65)';
-  ctx.fillText(D.title, side === 0 ? x + 82 : x + bw - 82, y - 12);
+  if (side === 0) { ctx.textAlign = 'left'; ctx.fillText(D.title, x + nameW + 14, y - 12); }
+  else { ctx.textAlign = 'right'; ctx.fillText(D.title, x + bw - nameW - 14, y - 12); }
 
   // meter
   const my = y + bh + 10, mw = bw, mh = 12;
@@ -701,7 +704,7 @@ function drawKoText() {
     ctx.fillStyle = 'rgba(220,232,255,.85)';
     ctx.font = '700 20px Trebuchet MS, sans-serif';
     ctx.shadowBlur = 0;
-    ctx.fillText('PRESS  ENTER  TO RETURN TO SELECT', W / 2, 460);
+    ctx.fillText('ENTER  —  CHARACTER SELECT      ·      R  —  REMATCH', W / 2, 460);
   }
   ctx.restore();
 }
@@ -738,7 +741,8 @@ function updateFight() {
     if (G.koTimer % 2 === 0) { updateTimers(); updateProjectiles(); updateFx(); updateParticles(); }
     ALLOW_INPUT = false;
     G.p1.update(); G.p2.update();
-    if (G.koTimer > 100 && pressed['enter']) { G.state = 'select'; G.sel.locked = [false, false]; }
+    if (G.koTimer > 100 && pressed['enter']) { G.state = 'select'; SEL.locked = [false, false]; SEL.startDelay = 0; }
+    if (G.koTimer > 100 && pressed['r']) { startMatch(G.p1.data.id, G.p2.data.id); }
     return;
   }
 

@@ -212,7 +212,7 @@ function drawFighter(f, baseX, baseY) {
   const sh = { x: neckX * .92, y: neckY * .92 };
   const bArm = limbPts(sh.x, sh.y, P.bA[0], P.bA[1], LIMB.up, LIMB.fore);
   drawLimb(bArm, back, lw * .92);
-  if (L.gloves) drawGlove(bArm.ex, bArm.ey, shade(L.gloves, .8), s, .85);
+  if (L.gloves || L.gauntlets) drawGlove(bArm.ex, bArm.ey, shade(L.gloves || L.gauntlets, .8), s, .85);
   if (L.mantle) drawMantle(L, P, s);
 
   /* head */
@@ -227,10 +227,11 @@ function drawFighter(f, baseX, baseY) {
   /* front arm + weapon */
   const fArm = limbPts(sh.x, sh.y, P.fA[0], P.fA[1], LIMB.up, LIMB.fore);
   drawLimb(fArm, body, lw);
-  if (L.gloves) drawGlove(fArm.ex, fArm.ey, L.gloves, s);
+  if (L.gloves || L.gauntlets) drawGlove(fArm.ex, fArm.ey, L.gloves || L.gauntlets, s);
   if (D.weapon && D.weapon !== 'fists' && !f.noWeapon) {
     const resting = !f.atk && !f.ult && (D.weapon === 'axe' || D.weapon === 'greatsword');
-    if (resting) drawWeaponAt(f, D, sh.x - 2 * s, sh.y + 12, 3.98, s);
+    if (resting && D.weapon === 'greatsword') drawWeaponAt(f, D, sh.x - 6 * s, sh.y + 16, 3.62, s);
+    else if (resting) drawWeaponAt(f, D, fArm.ex, fArm.ey + 3 * s, Math.PI, s);
     else drawWeaponAt(f, D, fArm.ex, fArm.ey, P.fA[0] + P.fA[1], s);
   }
   if (L.grimoire) {
@@ -240,9 +241,13 @@ function drawFighter(f, baseX, baseY) {
   if (f.hurtFlash > 0) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.32 * (f.hurtFlash / 8);
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.ellipse(0, -56, 26, 58, 0, 0, TAU); ctx.fill();
+    const k = f.hurtFlash / 8;
+    const g = ctx.createRadialGradient(0, -56, 4, 0, -56, 58);
+    g.addColorStop(0, `rgba(255,220,220,${0.34 * k})`);
+    g.addColorStop(.55, `rgba(255,120,120,${0.16 * k})`);
+    g.addColorStop(1, 'rgba(255,80,80,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(0, -56 * s, 30 * s, 62 * s, 0, 0, TAU); ctx.fill();
     ctx.restore();
   }
   ctx.restore();
@@ -439,25 +444,26 @@ function drawCape(f, L, P, LM) {
   const nY = -Math.cos(P.lean) * LM.torso * .88;
   const lag = clamp(f.capeLag || 0, -1, 1);
   const lift = clamp(f.airY / 140, 0, 1);
-  const tipX = -30 - lag * 26 - lift * 14;
-  const tipY = nY * .5 + 62 - lift * 26;
-  const midX = -16 - lag * 16;
-  const midY = nY * .75 + 26 + Math.sin(f.animT * .09) * 3;
+  const sway = Math.sin(f.animT * .08) * 4;
+  const tipX = -34 - lag * 28 - lift * 16 + sway * .4;
+  const tipY = nY * .9 + 74 - lift * 30;
+  const midX = -24 - lag * 16;
+  const midY = nY * .82 + 34 + sway;
 
   ctx.save();
   ctx.beginPath();
-  ctx.moveTo(nX + 5, nY + 4);
+  ctx.moveTo(nX + 7, nY + 3);
   ctx.quadraticCurveTo(midX, midY, tipX, tipY);
-  ctx.quadraticCurveTo(tipX - 14, tipY - 18, midX - 6, nY * .55 + 6);
-  ctx.quadraticCurveTo(-6, nY * .8, nX - 5, nY + 4);
+  ctx.quadraticCurveTo(tipX - 20, tipY - 30, midX - 12, nY * .5 + 24);
+  ctx.quadraticCurveTo(-10, nY * .8, nX - 7, nY + 3);
   ctx.closePath();
-  const g = ctx.createLinearGradient(0, nY, tipX, tipY);
+  const g = ctx.createLinearGradient(nX, nY, tipX, tipY);
   g.addColorStop(0, L.cape);
-  g.addColorStop(1, shade(L.cape, .62));
+  g.addColorStop(1, shade(L.cape, .55));
   ctx.fillStyle = g;
   ctx.fill();
-  ctx.strokeStyle = hexA(L.capeTrim || L.cape, .45);
-  ctx.lineWidth = 1.1;
+  ctx.strokeStyle = hexA(L.capeTrim || L.cape, .5);
+  ctx.lineWidth = 1.2;
   ctx.stroke();
   ctx.restore();
 }
@@ -491,15 +497,15 @@ function drawWeaponAt(f, D, hx, hy, armAngle, s) {
       ctx.strokeStyle = '#2a2228'; ctx.lineWidth = 6 * s;
       ctx.beginPath(); ctx.moveTo(-14 * s, 0); ctx.lineTo(0, 0); ctx.stroke();
       ctx.fillStyle = '#6d6472';
-      ctx.fillRect(-2 * s, -9 * s, 5 * s, 18 * s);
+      ctx.fillRect(-2 * s, -8 * s, 5 * s, 16 * s);
       // blade
-      const len = 58 * s;
+      const len = 56 * s;
       ctx.beginPath();
-      ctx.moveTo(2 * s, -9 * s);
-      ctx.lineTo(len * .86, -12 * s);
+      ctx.moveTo(2 * s, -6.5 * s);
+      ctx.lineTo(len * .88, -8.5 * s);
       ctx.lineTo(len, 0);
-      ctx.lineTo(len * .86, 12 * s);
-      ctx.lineTo(2 * s, 9 * s);
+      ctx.lineTo(len * .88, 8.5 * s);
+      ctx.lineTo(2 * s, 6.5 * s);
       ctx.closePath();
       ctx.fillStyle = f.demon > 0 ? '#12121a' : '#1e1e28';
       ctx.fill();
@@ -533,7 +539,7 @@ function drawWeaponAt(f, D, hx, hy, armAngle, s) {
       break;
     }
     case 'axe': {
-      drawAxeShape(6 * s, 0, Math.PI / 2, D.weaponColor, D.accent);
+      drawAxeShape(2 * s, 0, 0, D.weaponColor, D.accent);
       break;
     }
     case 'staff': {
@@ -666,10 +672,10 @@ function drawAura(f, D, s) {
   const col = f.demon > 0 ? '#e8323c' : D.accent;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  const cy = -58 * s, rx = 62 * s, ry = 92 * s;
+  const cy = -56 * s, rx = 46 * s, ry = 74 * s;
   const g = ctx.createRadialGradient(0, cy, 4, 0, cy, ry);
-  g.addColorStop(0, hexA(col, .30 * strength));
-  g.addColorStop(.55, hexA(col, .13 * strength));
+  g.addColorStop(0, hexA(col, .20 * strength));
+  g.addColorStop(.55, hexA(col, .08 * strength));
   g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.ellipse(0, cy, rx, ry, 0, 0, TAU); ctx.fill();
@@ -692,8 +698,9 @@ function drawMantle(L, P, s) {
   ctx.beginPath();
   ctx.moveTo(-14 * s, 0);
   ctx.quadraticCurveTo(0, 5 * s, 14 * s, 0);
-  ctx.lineTo(17 * s, 17 * s);
-  ctx.quadraticCurveTo(0, 24 * s, -17 * s, 17 * s);
+  ctx.lineTo(18 * s, 15 * s);
+  ctx.lineTo(0, 26 * s);
+  ctx.lineTo(-18 * s, 15 * s);
   ctx.closePath();
   const g = ctx.createLinearGradient(0, 0, 0, 22 * s);
   g.addColorStop(0, L.mantle);
