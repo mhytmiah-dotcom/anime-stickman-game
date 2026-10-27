@@ -352,7 +352,7 @@ const projectiles = [];
 
 function proj(o) {
   projectiles.push(Object.assign({
-    x: 0, y: 0, vx: 0, vy: 0, r: 22, life: 90, max: 90, owner: null, kind: 'orb',
+    x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, r: 22, life: 90, max: 90, owner: null, kind: 'orb', hitCd: 0,
     color: '#fff', spin: 0, rot: 0, dmg: 8, kb: 5, ks: 14, dead: false, onHit: null
   }, o));
 }
@@ -360,6 +360,7 @@ function proj(o) {
 function updateProjectiles() {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
+    p.px = p.x; p.py = p.y;
     p.x += p.vx; p.y += p.vy;
     p.rot += p.spin;
     if (p.kind === 'fireball') {
@@ -379,10 +380,15 @@ function updateProjectiles() {
     if (p.owner) {
       const tg = p.owner.target;
       if (p.hitCd <= 0 && tg && tg.alive && !tg.invuln &&
-          Math.hypot(tg.x - p.x, (tg.y - tg.h * .5) - p.y) < p.r + 26) {
-        tg.hurt({ dmg: p.dmg, kb: p.kb, ks: p.ks, dir: Math.sign(p.vx) || p.face || p.owner.face, src: p.owner });
-        if (p.kind === 'axe') p.hitCd = 26;
-        else p.hit = true;
+          segmentHitsBody(p.px, p.py, p.x, p.y, p.r, tg)) {
+        const hp = hitPointOnBody(p.x, p.y, tg);
+        const ok = tg.hurt({ dmg: p.dmg, kb: p.kb, ks: p.ks, dir: Math.sign(p.vx) || p.face || p.owner.face, src: p.owner });
+        if (ok) {
+          burst(hp.x, hp.y, p.color || p.owner.data.accent, 10, 5);
+          sparks(hp.x, hp.y, '#ffffff', 4, 5);
+          if (p.kind !== 'axe') p.hit = true;
+          else p.hitCd = 26;
+        }
       }
     }
     const off = p.x < -120 || p.x > W + 120 || p.y < -220 || p.y > H + 80;
@@ -538,7 +544,10 @@ const _drawFx2 = drawFx;
 drawFx = function () {
   _drawFx2();
   for (const f of fx) {
-    if (f.kind === 'spike') {
+    if (f.kind === 'darkwave') {
+      const p2 = f.t / f.life;
+      drawDarkWave(f.x, f.y, f.rot + (1 - p2) * .25, f.size * (0.85 + .35 * easeOut(p2)), f.fill, f.edge, 1 - p2 * p2, f.thick, f.span || 0.8);
+    } else if (f.kind === 'spike') {
       const p = clamp(f.t / 8, 0, 1);
       const out = f.t > f.life - 10 ? (f.life - f.t) / 10 : 1;
       const h = f.h * easeOut(p) * out;
@@ -649,4 +658,73 @@ function drawMoonShape(f) {
 
 function drawMoonBg() {
   for (const f of fx) if (f.kind === 'moon' && f.behind) drawMoonShape(f);
+}
+
+/* ---------------- body hitboxes ---------------- */
+function bodyBox(f) {
+  const h = f.h || 140;
+  return {
+    x1: f.x - 24, x2: f.x + 24,
+    y1: f.y - (f.airY || 0) - h * 0.98,
+    y2: f.y - (f.airY || 0) - 8
+  };
+}
+
+function rectsOverlap(a, b) {
+  return a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
+}
+
+/* circle vs body box */
+function pointHitsBody(x, y, r, f) {
+  const b = bodyBox(f);
+  const cx = clamp(x, b.x1, b.x2);
+  const cy = clamp(y, b.y1, b.y2);
+  const dx = x - cx, dy = y - cy;
+  return dx * dx + dy * dy <= r * r;
+}
+
+/* swept circle vs body box (prevents fast projectiles tunnelling) */
+function segmentHitsBody(x1, y1, x2, y2, r, f) {
+  const dist = Math.hypot(x2 - x1, y2 - y1);
+  const steps = Math.min(24, Math.ceil(dist / 7) + 1);
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    if (pointHitsBody(lerp(x1, x2, t), lerp(y1, y2, t), r, f)) return true;
+  }
+  return false;
+}
+
+/* where on the body a projectile landed (for sparks) */
+function hitPointOnBody(x, y, f) {
+  const b = bodyBox(f);
+  return { x: clamp(x, b.x1, b.x2), y: clamp(y, b.y1, b.y2) };
+}
+
+/* solid anti-magic blade wave (black core + hot rim) */
+function drawDarkWave(x, y, rot, size, fill, edge, alpha = 1, thick = 1, span = 0.8) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.globalAlpha = alpha;
+  const oy = 0.42 * size;
+  const path = () => {
+    ctx.beginPath();
+    const cut = (1 - span) * Math.PI / 2;
+    ctx.arc(0, oy, size, Math.PI + cut, TAU - cut, false);
+    ctx.arc(0, oy, size * 0.7, TAU - cut, Math.PI + cut, true);
+    ctx.closePath();
+  };
+  ctx.globalCompositeOperation = 'source-over';
+  path();
+  const g = ctx.createLinearGradient(0, oy - size, 0, oy);
+  g.addColorStop(0, fill); g.addColorStop(1, '#241018');
+  ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = edge; ctx.lineWidth = 3.2 * thick; ctx.lineJoin = 'round'; path(); ctx.stroke();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = hexA('#ffffff', .55); ctx.lineWidth = 1.2 * thick; path(); ctx.stroke();
+  ctx.restore();
+}
+
+function fxDarkWave(o) {
+  fx.push(Object.assign({ kind: 'darkwave', x: 0, y: 0, t: 0, life: 16, rot: 0, size: 62, fill: '#0a0a12', edge: '#ff4a55', thick: 1.6, span: 0.8 }, o));
 }

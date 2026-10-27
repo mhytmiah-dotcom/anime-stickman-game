@@ -28,6 +28,9 @@ class Fighter {
     this.capeLag = 0; this.alpha = 1; this.hide = false; this.noWeapon = false;
     this.phoenixActive = false; this.phoenixRot = 0; this.koRot = 0;
     this.ghost = false; this.other = null; this.opponentName = '';
+    this.comboStep = 1; this.lunge = 0; this.dashT = 0; this.dashDir = 1;
+    this.tapDir = 0; this.tapT = -99; this.landT = 0; this.trail = [];
+    this.jumpT = 0; this.wasAir = false;
   }
 
   get target() { return this.other; }
@@ -44,6 +47,7 @@ class Fighter {
     this.noWeapon = false; this.phoenixActive = false; this.held = false;
     this.frozen = 0; this.demon = 0; this.aura = 0; this.invuln = 0;
     this.combo = 0; this.comboT = 0; this.capeLag = 0; this.stun = 0;
+    this.comboStep = 1; this.lunge = 0; this.dashT = 0; this.landT = 0; this.trail = []; this.jumpT = 0;
   }
 
   gainMeter(n) {
@@ -94,14 +98,38 @@ class Fighter {
 }
 
 /* ---------------- fighter update ---------------- */
-Fighter.prototype.startAttack = function (kind) {
-  if (this.state !== 'idle' || this.atk || this.ult || this.stun > 0 || this.held) return;
+Fighter.prototype.startAttack = function (kind, chain) {
+  if (this.state !== 'idle' || this.held || this.stun > 0 || this.ult) return;
+  const cancelling = !!this.atk && this.atkT > this.atkDur * 0.46;
+  if (this.atk && !cancelling) return;
+  if (this.airY > 0) kind = 'airkick';
+  if (cancelling && chain) {
+    this.comboStep = Math.min(3, (this.comboStep || 1) + 1);
+    if (this.comboStep === 3) kind = 'kick';
+  } else {
+    this.comboStep = 1;
+  }
   this.atk = kind;
   this.atkT = 0;
-  this.atkDur = kind === 'punch' ? 24 : 32;
+  this.atkDur = kind === 'punch' ? 22 : (kind === 'airkick' ? 34 : 30);
   this.hitDone = false;
   this.atkSide = this.face;
-  if (this.airY === 0) dust(this.x - this.face * 10, this.y, 3, '#7a86a6');
+  this.lunge = kind === 'punch' ? (this.comboStep >= 2 ? 6.4 : 4.6) : 6.0;
+  if (kind !== 'punch' && this.airY === 0) {
+    fxSlash({ x: this.x + this.face * 46, y: this.y - this.h * .36, rot: 0.55 * this.face, size: 40, color: hexA(this.data.accent, .9), edge: '#ffffff', thick: .7, life: 9 });
+  }
+  if (this.airY === 0 && kind !== 'airkick') dust(this.x - this.face * 10, this.y, 3, '#7a86a6');
+};
+
+Fighter.prototype.startDash = function (dir) {
+  if (this.dashT > 0 || this.state !== 'idle' || this.ult || this.held) return;
+  this.dashT = 13;
+  this.dashDir = dir;
+  this.vx = dir * 11;
+  this.invuln = Math.max(this.invuln, 8);
+  dust(this.x, this.y, 6, '#8b98b8');
+  ring(this.x, this.y, hexA(this.data.accent, .7), 8, 4, 12, 2);
+  if (Math.random() < .8) burst(this.x - dir * 10, this.y - 40, this.data.accent, 5, 3);
 };
 
 Fighter.prototype.tryUlt = function (which) {
@@ -143,6 +171,10 @@ Fighter.prototype.endUlt = function () {
 
 Fighter.prototype.update = function () {
   this.animT++;
+  if (this.landT > 0) this.landT--;
+  if (this.trail.length) {
+    for (let i = this.trail.length - 1; i >= 0; i--) if (--this.trail[i].t <= 0) this.trail.splice(i, 1);
+  }
   if (this.invuln > 0) this.invuln--;
   if (this.hurtFlash > 0) this.hurtFlash--;
   if (this.frozen > 0) this.frozen--;
@@ -189,10 +221,25 @@ Fighter.prototype.update = function () {
   if (this.atk) {
     this.atkT++;
     const k = this.atkT / this.atkDur;
-    if (!this.hitDone && k > 0.34 && k < 0.74) this.checkHit();
+    if (!this.hitDone && k > 0.28 && k < 0.78) this.checkHit();
+    // weapon / fist motion trail
+    if (k > 0.3 && k < 0.62 && this.animT % 2 === 0) {
+      const reach = (this.atk === 'punch' ? 62 : 78) * (this.data.reach || 1) * this.scale;
+      const tx = this.x + this.face * reach * (0.6 + k * 0.6);
+      const ty = this.y - this.airY - this.h * (this.atk === 'kick' ? 0.32 : 0.6);
+      trail(tx, ty, this.data.id === 'asta' ? '#e8323c' : this.data.accent, rand(2.5, 4.5), 12);
+    }
     if (this.atkT >= this.atkDur) this.atk = null;
   }
 
+  if (this.dashT > 0) {
+    this.dashT--;
+    this.vx = this.dashDir * (4 + this.dashT * 0.7);
+    this.walking = false;
+    if (this.dashT % 2 === 0) this.trail.push({ x: this.x, y: this.y, airY: this.airY, face: this.face, t: 11 });
+    this.applyPhysics();
+    return;
+  }
   if (this.ci && ALLOW_INPUT) this.handleInput(this.ci);
   else if (this.ci && this.target && this.target.alive) this.face = dirTo(this.x, this.target.x);
   this.applyPhysics();
@@ -200,35 +247,51 @@ Fighter.prototype.update = function () {
 
 Fighter.prototype.handleInput = function (ci) {
   const t = this.target;
-  if (!this.atk && this.ult === null) {
+  if (!this.atk && !this.ult) {
     if (t && t.alive && Math.abs(t.x - this.x) > 12) this.face = dirTo(this.x, t.x);
   }
   const grounded = this.airY === 0;
   let mx = 0;
   if (keys[ci.left]) mx--;
   if (keys[ci.right]) mx++;
+
+  /* double-tap dash */
+  if (grounded && !this.atk && !this.ult) {
+    if (pressed[ci.left]) {
+      if (this.tapDir === -1 && G.time - this.tapT <= 16) this.startDash(-1);
+      this.tapDir = -1; this.tapT = G.time;
+    } else if (pressed[ci.right]) {
+      if (this.tapDir === 1 && G.time - this.tapT <= 16) this.startDash(1);
+      this.tapDir = 1; this.tapT = G.time;
+    }
+  }
+
   const boost = this.demon > 0 ? 1.15 : 1;
-  const spd = this.data.speed * boost * (this.atk ? 0.3 : 1) * (this.held ? 0 : 1);
-  if (mx !== 0) {
-    this.vx = mx * spd * (grounded ? 1 : 0.82);
+  const spd = this.data.speed * boost * (this.atk ? 0.25 : 1);
+  if (this.atk) {
+    this.walking = false;
+  } else if (mx !== 0) {
+    this.vx = mx * spd * (grounded ? 1 : 0.85);
     if (grounded) {
       this.walking = true;
       this.walkPhase += 0.2 * boost;
-      if (Math.random() < 0.14) dust(this.x, this.y, 1, '#66708c');
+      if (Math.random() < 0.12) dust(this.x - mx * 8, this.y, 1, '#66708c');
     }
   } else if (grounded) {
-    this.vx *= 0.55;
+    this.vx *= 0.5;
     this.walking = false;
   }
 
   if (pressed[ci.jump] && grounded && !this.atk) {
     this.vy = this.data.jump * (this.demon > 0 ? 1.06 : 1);
-    if (this.vy > 0) this.airY = 0.01;
-    dust(this.x, this.y, 6, '#7a86a6');
-    ring(this.x, this.y, hexA(this.data.accent, .8), 8, 4, 12, 2);
+    this.airY = 0.01;
+    this.jumpT = 0;
+    this.landT = 0;
+    dust(this.x, this.y, 7, '#7a86a6');
+    ring(this.x, this.y, hexA(this.data.accent, .8), 7, 4, 12, 2);
   }
-  if (pressed[ci.punch]) this.startAttack('punch');
-  if (pressed[ci.kick]) this.startAttack('kick');
+  if (pressed[ci.punch]) this.startAttack('punch', true);
+  if (pressed[ci.kick]) this.startAttack('kick', true);
   if (pressed[ci.e]) this.tryUlt('e');
   if (pressed[ci.r]) this.tryUlt('r');
 };
@@ -237,33 +300,52 @@ Fighter.prototype.applyPhysics = function () {
   if (this.airY > 0 || this.vy > 0) {
     this.airY += this.vy;
     this.vy -= GRAV;
+    this.jumpT++;
     if (this.airY <= 0) {
       this.airY = 0;
-      if (this.vy < -7) { dust(this.x, this.y, 6, '#7a86a6'); ring(this.x, this.y, hexA(this.data.accent, .5), 6, 3, 10, 2); }
+      this.landT = 12;
+      if (this.vy < -6) {
+        dust(this.x, this.y, 8, '#7a86a6');
+        ring(this.x, this.y, hexA(this.data.accent, .5), 6, 4, 11, 2);
+      }
       this.vy = 0;
     }
   }
+  if (this.lunge > 0.4) {
+    this.vx = this.face * this.lunge;
+    this.lunge *= 0.8;
+  } else this.lunge = 0;
   this.x = clamp(this.x + this.vx, LEFT_WALL, RIGHT_WALL);
+};
+
+Fighter.prototype.attackBox = function () {
+  let base = this.atk === 'punch' ? 84 : 102;
+  if (this.atk === 'airkick') base = 90;
+  const reach = base * (this.data.reach || 1) * (this.scale || 1);
+  const y1 = this.y - this.airY - this.h * 0.98;
+  const y2 = this.y - this.airY - 2;
+  return {
+    x1: this.face > 0 ? this.x - 8 : this.x - reach,
+    x2: this.face > 0 ? this.x + reach : this.x + 8,
+    y1, y2
+  };
 };
 
 Fighter.prototype.checkHit = function () {
   const tg = this.target;
   if (!tg || !tg.alive) return;
-  const base = this.atk === 'punch' ? 74 : 88;
-  const reach = base * (this.data.reach || 1) * (this.scale || 1);
-  const d = Math.abs(tg.x - this.x);
-  const dy = Math.abs((this.y - this.airY) - (tg.y - tg.airY));
-  if (d > reach || dy > 120) return;
-  if ((tg.x - this.x) * this.face < 10) return;
+  if (!rectsOverlap(this.attackBox(), bodyBox(tg))) return;
   this.hitDone = true;
-  const dmgBase = this.atk === 'punch' ? 6 : 9;
+  const heavy = this.atk === 'kick' || this.atk === 'airkick';
+  const chain = this.atk === 'punch' ? (this.comboStep || 1) : 1;
+  const dmgBase = heavy ? 9 : (chain >= 3 ? 8 : 6);
+  const hy = tg.y - tg.airY - tg.h * (heavy ? 0.34 : 0.62);
+  const hx = clamp(this.x + this.face * 40, tg.x - 20, tg.x + 20);
   const res = tg.hurt({
-    dmg: dmgBase, kb: this.atk === 'punch' ? 4.6 : 6.8,
-    ks: this.atk === 'punch' ? 13 : 18, up: this.atk === 'kick' ? -4 : 0,
+    dmg: dmgBase, kb: heavy ? 6.8 : 4.6,
+    ks: heavy ? 18 : 13, up: heavy ? -4 : 0,
     dir: this.face, src: this
   });
-  const hx = (this.x + tg.x) / 2 + this.face * 8;
-  const hy = tg.y - tg.airY - 62;
   if (!res) return;
   this.hitFx(hx, hy);
 };
@@ -271,35 +353,46 @@ Fighter.prototype.checkHit = function () {
 Fighter.prototype.hitFx = function (x, y) {
   const id = this.data.id;
   const acc = this.data.accent;
-  const heavy = this.atk === 'kick';
-  hitspark(x, y, acc, heavy ? 16 : 11);
-  shake(heavy ? 7 : 4);
-  hitstop(heavy ? 4 : 2);
+  const heavy = this.atk === 'kick' || this.atk === 'airkick' || this.comboStep === 3;
+  hitspark(x, y, acc, heavy ? 18 : 12);
+  ring(x, y, '#ffffff', 5, 4, 9, 2);
+  shake(heavy ? 8 : 4.5);
+  hitstop(heavy ? 5 : 2);
+
   if (id === 'asta') {
-    fxSlash({ x, y, rot: heavy ? 0.85 : -0.9, size: heavy ? 74 : 58, color: '#141420', edge: '#ff5a63', thick: 1.7, life: 14 });
-    fxSlash({ x, y, rot: (heavy ? -0.5 : 0.55), size: 34, color: '#e8323c', edge: '#ffffff', thick: 1, life: 10 });
-    sparks(x, y, '#e8323c', 7, 6);
-    if (Math.random() < .7) trail(x, y, '#2a2a38', 6, 18);
+    fxDarkWave({ x, y, rot: heavy ? 0.55 : -0.95, size: heavy ? 74 : 46, fill: '#0a0a12', edge: '#ff4a55', thick: heavy ? 2.1 : 1.4, life: waveLife(heavy), span: heavy ? .75 : .5 });
+    fxDarkWave({ x, y, rot: heavy ? -0.5 : 0.8, size: heavy ? 48 : 30, fill: '#14060a', edge: '#ff8088', thick: 1, life: 11, span: .45 });
+    sparks(x, y, '#ff4a55', heavy ? 14 : 9, 7);
+    burst(x, y, '#1a0a10', heavy ? 12 : 7, 5, { glow: false, g: .05 });
+    ring(x, y, '#e8323c', 8, 7, 16, 3);
+    if (heavy) fxText({ x, y: y - 40, text: 'ANTI-MAGIC', color: '#ff6a74', size: 15, life: 26 });
   } else if (id === 'titan') {
-    fxSlash({ x, y, rot: heavy ? 0.8 : -0.75, size: heavy ? 86 : 70, color: '#ffcf5c', edge: '#fff3c4', thick: 1.8, life: 14 });
-    ring(x, y, '#ffcf5c', 8, 5, 12, 3);
+    fxSlash({ x, y, rot: heavy ? 0.8 : -0.75, size: heavy ? 92 : 74, color: '#ffcf5c', edge: '#fff3c4', thick: 2, life: 15 });
+    ring(x, y, '#ffcf5c', 10, 8, 15, 4);
+    for (let i = 0; i < (heavy ? 7 : 4); i++) {
+      part({ x, y, vx: rand(-5, 5), vy: rand(-6, 1), g: .35, life: rand(14, 24), max: 24, size: rand(3, 6), color: pick(['#a8946a', '#6f6355']), kind: 'shard', rot: rand(0, TAU), spin: rand(-.3, .3), glow: false });
+    }
   } else if (id === 'ronin') {
-    fxSlash({ x, y, rot: heavy ? 0.6 : -0.6, size: heavy ? 80 : 62, color: '#dfe9ff', edge: '#ffffff', thick: 1.1, life: 12 });
-    fxLine({ x1: x - 40, y1: y + (heavy ? 30 : -30), x2: x + 40, y2: y - (heavy ? 30 : -30), color: '#c9d6ff', width: 2, life: 8 });
+    fxSlash({ x, y, rot: heavy ? 0.55 : -0.62, size: heavy ? 96 : 70, color: '#dfe9ff', edge: '#ffffff', thick: 1.3, life: 14 });
+    fxLine({ x1: x - 46, y1: y + (heavy ? 34 : -30), x2: x + 46, y2: y - (heavy ? 34 : -30), color: '#c9d6ff', width: 2.5, life: 9 });
+    sparks(x, y, '#ffffff', 8, 6);
   } else if (id === 'shadow') {
-    fxSlash({ x, y, rot: heavy ? 0.7 : -0.7, size: heavy ? 66 : 52, color: '#b06bff', edge: '#e6d7ff', thick: 1.2, life: 12 });
-    if (Math.random() < .5) trail(x, y, '#3c2a55', 5, 14);
+    fxSlash({ x, y, rot: heavy ? 0.7 : -0.7, size: heavy ? 74 : 58, color: '#b06bff', edge: '#e6d7ff', thick: 1.4, life: 13 });
+    for (let i = 0; i < 5; i++) part({ x, y, vx: rand(-2, 2), vy: rand(-3, 0), life: 20, max: 20, size: rand(6, 12), color: '#2a1a3e', kind: 'smoke', g: -.02, glow: false });
   } else if (id === 'frost') {
-    fxSlash({ x, y, rot: -0.7, size: 54, color: '#9fe8ff', edge: '#ffffff', thick: 1.1, life: 12 });
-    for (let i = 0; i < 5; i++) part({ x, y, vx: rand(-3, 3), vy: rand(-4, 1), g: .2, life: 18, max: 18, size: rand(3, 6), color: '#dff8ff', kind: 'shard', rot: rand(0, TAU), spin: .2 });
+    fxSlash({ x, y, rot: -0.7, size: 60, color: '#9fe8ff', edge: '#ffffff', thick: 1.2, life: 13 });
+    for (let i = 0; i < 7; i++) part({ x, y, vx: rand(-4, 4), vy: rand(-5, 1), g: .2, life: 18, max: 18, size: rand(3, 7), color: '#dff8ff', kind: 'shard', rot: rand(0, TAU), spin: .2 });
   } else if (id === 'volt') {
-    fxBolt({ x: x + 30, y: y + 40, fromX: x - 30, up: 90, color: '#ffe83d', width: 2.4, life: 10 });
-    sparks(x, y, '#ffe83d', 8, 6);
+    fxBolt({ x: x + 34, y: y + 44, fromX: x - 34, up: 100, color: '#ffe83d', width: 2.6, life: 11 });
+    sparks(x, y, '#ffe83d', 10, 7);
+    ring(x, y, '#ffe83d', 7, 6, 12, 3);
   } else if (id === 'blaze') {
-    burst(x, y, '#ff8a2b', 12, 5, { g: -.02 });
-    trail(x, y, '#ff5a00', 6, 16);
+    burst(x, y, '#ff8a2b', 14, 6, { g: -.02 });
+    burst(x, y, '#ffd24a', 6, 4);
+    ring(x, y, '#ff6a1a', 8, 7, 14, 3);
   } else {
-    fxSlash({ x, y, rot: -0.7, size: 48, color: acc, edge: '#ffffff', thick: 1, life: 10 });
+    fxSlash({ x, y, rot: -0.7, size: 54, color: acc, edge: '#ffffff', thick: 1.1, life: 11 });
+    ring(x, y, acc, 6, 5, 12, 2);
   }
 };
 
@@ -318,6 +411,8 @@ function announceUlt(f, name, color, big) {
   G.banner = { name, sub: f.data.name, color, t: 0, life: big ? 96 : 74, big: !!big };
   if (big) { cam.dark = Math.max(cam.dark, .5); shake(8); }
 }
+
+const waveLife = h => (h ? 17 : 13);
 
 function onKO(loser) {
   G.koTimer = 1;
@@ -634,6 +729,10 @@ function drawFightScene() {
   sg.addColorStop(1, 'rgba(90,140,255,0)');
   ctx.fillStyle = sg; ctx.fillRect(0, GROUND - 160, W, 300);
 
+  for (const f of [G.p1, G.p2]) {
+    if (!f || !f.trail.length) continue;
+    for (const g of f.trail) drawGhost(f, g, g.t / 11);
+  }
   const order = (G.p1 && G.p2) ? (G.p1.x <= G.p2.x ? [G.p2, G.p1] : [G.p1, G.p2]) : [];
   for (const f of order) if (f) drawFighter(f, f.x, f.y);
 

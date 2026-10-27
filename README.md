@@ -16,6 +16,20 @@ Open `index.html` in any modern browser — no build step, no dependencies.
   P2 moves with the arrow keys, locks with **K**, backs out with **L**. **Enter** locks both.
 * **After a K.O.:** **Enter** returns to character select, **R** is a rematch.
 
+### Movement tech
+
+* **Double-tap** left/right to **dash** — invincible for a few frames, leaves speed ghosts.
+* **Punch in the air** for a **dive kick** (`airkick`), with a longer lunging hitbox.
+* Tap **punch repeatedly** for a **3-hit chain**: jab → jab → heavy finisher (more damage, bigger hitstop).
+* Attacks **lunge** forward, so you can convert a read into a hit from just outside range.
+
+### Hit detection
+
+Fighters are hit with **body boxes** (head to feet), not a single point, so low kicks,
+overhead fireballs and tall slashes all connect where they look like they should.
+Projectiles use **swept collision** (previous position → current position) so fast
+fireballs, wind blades and the thrown axe cannot tunnel through you.
+
 ## The ult meter
 
 E and R are **both** ultimates:

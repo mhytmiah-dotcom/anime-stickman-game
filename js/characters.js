@@ -362,8 +362,8 @@ const ROSTER = [
       if (t === 8 || t === 13 || t === 18) {
         const off = (t - 13) * .55;
         proj({
-          kind: 'wind', x: f.x + f.face * 30, y: f.y - f.h * .6 + off * 26, owner: f, r: 20,
-          vx: f.face * 13, vy: off * .8, spin: .25 * f.face, dmg: 9, kb: 5, ks: 16, life: 60
+          kind: 'wind', x: f.x + f.face * 30, y: f.y - f.h * .6 + off * 12, owner: f, r: 22,
+          vx: f.face * 13, vy: off * .35, spin: .25 * f.face, dmg: 9, kb: 5, ks: 16, life: 60
         });
         ring(f.x + f.face * 30, f.y - f.h * .6 + off * 26, '#57e39b', 8, 5, 12, 3);
         shake(2);
@@ -520,15 +520,15 @@ const ROSTER = [
         s.cast = true;
         shake(6); flash('#9fe8ff', .18);
         const startX = f.x + f.face * 60;
-        for (let i = 0; i < 6; i++) {
-          const sx = clamp(startX + f.face * i * 62, 40, W - 40);
+        for (let i = 0; i < 10; i++) {
+          const sx = clamp(startX + f.face * i * 60, 40, W - 40);
           later(3 + i * 4, () => {
             fxSpike({ x: sx, y: GROUND, color: '#bfefff', dir: f.face });
             burst(sx, GROUND - 30, '#cdf4ff', 8, 5, { g: .1 });
             ring(sx, GROUND, '#9fe8ff', 10, 5, 14, 3);
             shake(3);
             const tg = f.target;
-            if (tg && tg.alive && Math.abs(tg.x - sx) < 46 && tg.airY < 70) {
+            if (tg && tg.alive && Math.abs(tg.x - sx) < 54 && tg.airY < 90) {
               tg.hurt({ dmg: 6, kb: 4, ks: 12, up: -4, dir: f.face, src: f });
               tg.frozen = Math.max(tg.frozen, 34);
               for (let k = 0; k < 6; k++) part({ x: sx + rand(-20, 20), y: GROUND - rand(20, 90), vx: rand(-2, 2), vy: rand(-4, -1), g: .18, life: 20, max: 20, size: rand(3, 6), color: '#dff8ff', kind: 'shard', rot: rand(0, TAU), spin: rand(-.2, .2) });
