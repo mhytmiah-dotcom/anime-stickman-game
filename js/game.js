@@ -242,6 +242,7 @@ Fighter.prototype.update = function () {
     this.applyPhysics();
     return;
   }
+  if (this.ai) aiThink(this);
   if (this.ci && ALLOW_INPUT) this.handleInput(this.ci);
   else if (this.ci && this.target && this.target.alive) this.face = dirTo(this.x, this.target.x);
   this.applyPhysics();
@@ -435,7 +436,10 @@ function startMatch(c1, c2) {
   G.p2 = new Fighter(c2, W - 360, -1, 1);
   G.p1.scale = 1.3; G.p2.scale = 1.3;
   G.p1.other = G.p2; G.p2.other = G.p1;
-  G.p1.ci = CONTROLS[0]; G.p2.ci = CONTROLS[1];
+  G.p1.ci = CONTROLS[0];
+  G.p2.ci = AI_GAME.vsCPU ? AI_KEY : CONTROLS[1];
+  G.p2.ai = AI_GAME.vsCPU ? makeCPU(AI_GAME.level) : null;
+  aiClearKeys();
   G.state = 'fight'; G.intro = 1; G.koTimer = 0; G.winner = null;
   G.banner = null; G.endTimer = 0;
   G.p1.meter = 0; G.p2.meter = 0;
@@ -604,8 +608,9 @@ function drawFighterHud(f, side) {
   ctx.shadowBlur = 0;
   ctx.font = '600 11px Trebuchet MS, sans-serif';
   ctx.fillStyle = 'rgba(210,225,255,.65)';
-  if (side === 0) { ctx.textAlign = 'left'; ctx.fillText(D.title, x + nameW + 14, y - 12); }
-  else { ctx.textAlign = 'right'; ctx.fillText(D.title, x + bw - nameW - 14, y - 12); }
+  const subtitle = f.ai ? 'CPU · ' + f.ai.level.name : D.title;
+  if (side === 0) { ctx.textAlign = 'left'; ctx.fillText(subtitle, x + nameW + 14, y - 12); }
+  else { ctx.textAlign = 'right'; ctx.fillText(subtitle, x + bw - nameW - 14, y - 12); }
 
   // meter
   const my = y + bh + 10, mw = bw, mh = 12;
@@ -865,7 +870,7 @@ function updateFight() {
     if (G.koTimer % 2 === 0) { updateTimers(); updateProjectiles(); updateFx(); updateParticles(); }
     ALLOW_INPUT = false;
     G.p1.update(); G.p2.update();
-    if (G.koTimer > 100 && pressed['enter']) { G.state = 'select'; SEL.locked = [false, false]; SEL.startDelay = 0; }
+    if (G.koTimer > 100 && pressed['enter']) { G.state = 'select'; SEL.locked = [false, false]; SEL.startDelay = 0; SEL.cpuLockT = 0; }
     if (G.koTimer > 100 && pressed['r']) { startMatch(G.p1.data.id, G.p2.data.id); }
     return;
   }
@@ -886,7 +891,7 @@ function updateFight() {
 }
 
 /* ---------------- character select ---------------- */
-const SEL = { c: [0, 1], locked: [false, false], previews: [], t: 0, startDelay: 0 };
+const SEL = { c: [0, 1], locked: [false, false], previews: [], t: 0, startDelay: 0, cpuLockT: 0 };
 const GRID = { cols: 4, rows: 2, tw: 236, th: 196, gap: 16 };
 GRID.x0 = (W - (GRID.cols * GRID.tw + (GRID.cols - 1) * GRID.gap)) / 2;
 GRID.y0 = 134;
@@ -921,10 +926,23 @@ function navSel(p, dx, dy) {
 
 function updateSelect() {
   SEL.t++;
+
+  /* mode / difficulty shortcuts */
+  if (pressed['1'] && !AI_GAME.vsCPU) {
+    AI_GAME.vsCPU = true;
+    SEL.locked[1] = false; SEL.cpuLockT = 0; SEL.startDelay = 0;
+  }
+  if (pressed['2'] && AI_GAME.vsCPU) {
+    AI_GAME.vsCPU = false;
+    SEL.locked[1] = false; SEL.cpuLockT = 0; SEL.startDelay = 0;
+  }
+  if (pressed['3']) AI_GAME.level = (AI_GAME.level + 1) % AI_LEVELS.length;
+
   for (let p = 0; p < 2; p++) {
     const ci = CONTROLS[p];
     const lockKey = p === 0 ? 'f' : 'k';
     const backKey = p === 0 ? 'g' : 'l';
+    if (AI_GAME.vsCPU && p === 1) continue; // the CPU drives its own side
     if (SEL.locked[p]) {
       if (pressed[backKey]) { SEL.locked[p] = false; SEL.startDelay = 0; }
       continue;
@@ -941,6 +959,27 @@ function updateSelect() {
       ring(r.x + r.w / 2, r.y + r.h / 2, p === 0 ? '#4fd8ff' : '#ff8a4a', 10, 8, 20, 4);
     }
   }
+
+  /* CPU side: roulette while P1 is choosing, then commit to a pick. */
+  if (AI_GAME.vsCPU) {
+    if (!SEL.locked[0]) {
+      SEL.locked[1] = false;
+      SEL.cpuLockT = 0;
+      if (SEL.t % 12 === 0) {
+        let pickIdx = randi(0, ROSTER.length - 1);
+        if (ROSTER.length > 1 && pickIdx === SEL.c[0]) pickIdx = (pickIdx + 1 + randi(0, ROSTER.length - 2)) % ROSTER.length;
+        SEL.c[1] = pickIdx;
+      }
+    } else if (!SEL.locked[1]) {
+      SEL.cpuLockT++;
+      if (SEL.cpuLockT === 30) {
+        SEL.locked[1] = true;
+        const r = tileRect(SEL.c[1]);
+        ring(r.x + r.w / 2, r.y + r.h / 2, '#ff8a4a', 10, 8, 20, 4);
+      }
+    }
+  }
+
   if (SEL.locked[0] && SEL.locked[1]) {
     SEL.startDelay++;
     if (SEL.startDelay > 34) {
@@ -1041,7 +1080,7 @@ function drawSelect() {
     ctx.fillStyle = '#08101c';
     ctx.font = '900 12px Trebuchet MS, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('P' + (p + 1), (p === 0 ? x : x + w - 44) + 22, y - 10);
+    ctx.fillText(p === 1 && AI_GAME.vsCPU ? 'CPU' : 'P' + (p + 1), (p === 0 ? x : x + w - 44) + 22, y - 10);
     ctx.textBaseline = 'alphabetic';
     if (SEL.locked[p]) {
       ctx.fillStyle = 'rgba(5,10,18,.55)';
@@ -1063,7 +1102,7 @@ function drawSelect() {
 }
 
 function drawSelPanels() {
-  const py = 560, ph = 138, pw = (W - 80 - 24) / 2;
+  const py = 548, ph = 130, pw = (W - 80 - 24) / 2;
   for (let p = 0; p < 2; p++) {
     const ch = ROSTER[SEL.c[p]];
     const x = p === 0 ? 40 : 40 + pw + 24;
@@ -1074,11 +1113,12 @@ function drawSelPanels() {
     ctx.strokeStyle = hexA(ch.accent, .55); ctx.lineWidth = 1.5;
     rrect(x, py, pw, ph, 10); ctx.stroke();
     ctx.fillStyle = col;
-    rrect(x + 14, py + 12, 34, 18, 4); ctx.fill();
+    const badgeW = (p === 1 && AI_GAME.vsCPU) ? 46 : 34;
+    rrect(x + 14, py + 12, badgeW, 18, 4); ctx.fill();
     ctx.fillStyle = '#08101c';
     ctx.font = '900 12px Trebuchet MS, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('P' + (p + 1), x + 31, py + 26);
+    ctx.fillText(p === 1 && AI_GAME.vsCPU ? 'CPU' : 'P' + (p + 1), x + 14 + badgeW / 2, py + 26);
 
     ctx.textAlign = 'left';
     ctx.fillStyle = ch.accent;
@@ -1087,6 +1127,14 @@ function drawSelPanels() {
     ctx.fillStyle = 'rgba(200,215,245,.72)';
     ctx.font = '600 12px Trebuchet MS, sans-serif';
     ctx.fillText(ch.title + '   ·   HP ' + ch.hp, x + 58, py + 50);
+
+    if (p === 1 && AI_GAME.vsCPU) {
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#ff8a4a';
+      ctx.font = '900 12px Trebuchet MS, sans-serif';
+      ctx.fillText('BOT · ' + AI_LEVELS[AI_GAME.level].name, x + pw - 16, py + 30);
+      ctx.textAlign = 'left';
+    }
 
     ctx.font = '600 12.5px Trebuchet MS, sans-serif';
     ctx.fillStyle = 'rgba(186,202,230,.62)';
@@ -1116,13 +1164,19 @@ function drawSelectHints() {
   ctx.save();
   ctx.textAlign = 'center';
   ctx.font = '600 12px Trebuchet MS, sans-serif';
-  ctx.fillStyle = 'rgba(160,178,208,.6)';
-  ctx.fillText('P1: A/D/W/S move · F lock · G back      P2: ARROWS move · K lock · L back      T: ' + (STYLE.classic ? 'classic stickmen ON' : 'classic stickmen OFF'), W / 2, H - 8);
+  ctx.fillStyle = 'rgba(178,198,232,.72)';
+  ctx.fillText('1: 1 PLAYER vs CPU    ·    2: 2 PLAYERS LOCAL    ·    3: CPU LEVEL ' +
+    AI_LEVELS[AI_GAME.level].name, W / 2, H - 22);
+  ctx.fillStyle = 'rgba(160,178,208,.55)';
+  ctx.fillText('P1: A/D/W/S move · F lock · G back      P2: ARROWS move · K lock · L back      T: ' +
+    (STYLE.classic ? 'classic stickmen ON' : 'classic stickmen OFF'), W / 2, H - 6);
   ctx.restore();
 }
 
 /* ---------------- loading screen ---------------- */
 const TIPS = [
+  'Press 1 for solo vs CPU, 2 for local versus, 3 to change the CPU level.',
+  'A CPU opponent reads you on a delay — fast characters can exploit it.',
   'E and R are both ults — after using one you must recharge the meter to 100%.',
   'The meter fills by dealing AND taking damage. Play aggressive.',
   'Titan\u2019s axe returns to him — dodge the throw, then punish.',

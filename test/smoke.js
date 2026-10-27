@@ -21,8 +21,8 @@ check('loading -> select', () => {
   return run('T.info()');
 });
 
-check('lock both -> fight', () => {
-  run("T.tap('enter'); T.steps(4); T.tap('enter'); T.steps(60);");
+check('lock both -> fight (2P mode)', () => {
+  run("AI_GAME.vsCPU = false; T.tap('enter'); T.steps(4); T.tap('enter'); T.steps(60);");
   return run('T.info()');
 });
 
