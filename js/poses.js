@@ -265,29 +265,55 @@ function drawFighter(f, baseX, baseY) {
   }
 
   if (f.ult && D.id === 'yuno' && f.ultT > 16) drawSpirit(f, s);
+  if (classic) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const bg2 = ctx.createRadialGradient(0, -52 * s, 6, 0, -52 * s, 62 * s);
+    bg2.addColorStop(0, hexA(D.color, .055));
+    bg2.addColorStop(1, hexA(D.color, 0));
+    ctx.fillStyle = bg2;
+    ctx.beginPath(); ctx.ellipse(0, -52 * s, 56 * s, 76 * s, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
   drawAura(f, D, s);
 
   const body = f.ghost ? '#dfe8ff' : D.color;
   const back = f.ghost ? '#b9c8ff' : shade(D.color, .62);
+  let bodyPaint = body, backPaint = back;
+  if (classic) {
+    const bg1 = ctx.createLinearGradient(0, -112 * s, 0, 2 * s);
+    bg1.addColorStop(0, tint(D.color, 1.16));
+    bg1.addColorStop(.55, D.color);
+    bg1.addColorStop(1, tint(D.color, .78));
+    bodyPaint = bg1;
+    const bk1 = ctx.createLinearGradient(0, -112 * s, 0, 2 * s);
+    bk1.addColorStop(0, tint(shade(D.color, .7), 1.1));
+    bk1.addColorStop(1, tint(shade(D.color, .7), .8));
+    backPaint = bk1;
+  }
 
   /* cape */
   if (!classic && L.cape) drawCape(f, L, P, LIMB);
   if (!classic && L.scarf) drawScarf(f, L, P);
 
   /* back leg */
-  drawLimb(bLeg, back, lw);
-  drawFoot(bLeg, back, s, L);
+  drawLimb(bLeg, backPaint, lw, true);
+  drawFoot(bLeg, backPaint, s, L);
 
   /* torso */
   const neckX = Math.sin(P.lean) * LIMB.torso;
   const neckY = -Math.cos(P.lean) * LIMB.torso;
   const spineBend = Math.sin(P.lean * 1.8) * 4;
-  ctx.strokeStyle = 'rgba(6,9,16,.55)'; ctx.lineWidth = lw * 1.12 + 3.2; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(0, 0);
-  ctx.quadraticCurveTo(neckX * .5 + spineBend, neckY * .5, neckX, neckY); ctx.stroke();
-  ctx.strokeStyle = body; ctx.lineWidth = lw * 1.12;
-  ctx.beginPath(); ctx.moveTo(0, 0);
-  ctx.quadraticCurveTo(neckX * .5 + spineBend, neckY * .5, neckX, neckY); ctx.stroke();
+  if (classic) {
+    drawTorso(neckX, neckY, spineBend, bodyPaint, lw);
+  } else {
+    ctx.strokeStyle = 'rgba(6,9,16,.55)'; ctx.lineWidth = lw * 1.12 + 3.2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(neckX * .5 + spineBend, neckY * .5, neckX, neckY); ctx.stroke();
+    ctx.strokeStyle = body; ctx.lineWidth = lw * 1.12;
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(neckX * .5 + spineBend, neckY * .5, neckX, neckY); ctx.stroke();
+  }
   if (!classic && (L.robe || L.belt)) {
     ctx.strokeStyle = L.robe || L.belt; ctx.lineWidth = lw * 1.14;
     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(neckX * .45, neckY * .45); ctx.stroke();
@@ -296,8 +322,8 @@ function drawFighter(f, baseX, baseY) {
   /* back arm */
   const sh = { x: neckX * .92, y: neckY * .92 };
   const bArm = limbPts(sh.x, sh.y, P.bA[0], P.bA[1], LIMB.up, LIMB.fore);
-  drawLimb(bArm, back, lw * .92);
-  drawHand(bArm, P.bA[0] + P.bA[1], back, lw * .74, f.animT + 2);
+  drawLimb(bArm, backPaint, lw * .92, true);
+  drawHand(bArm, P.bA[0] + P.bA[1], backPaint, lw * .74, f.animT + 2);
   if (!classic && (L.gloves || L.gauntlets)) drawGlove(bArm.ex, bArm.ey, shade(L.gloves || L.gauntlets, .8), s, .85);
 
   /* two-handed weapons rest behind the head, so they never cut across the face */
@@ -315,13 +341,13 @@ function drawFighter(f, baseX, baseY) {
   drawHead(f, headX, headY, P, L, D, s, lw);
 
   /* front leg */
-  drawLimb(fLeg, body, lw);
-  drawFoot(fLeg, body, s, L);
+  drawLimb(fLeg, bodyPaint, lw);
+  drawFoot(fLeg, bodyPaint, s, L);
 
   /* front arm + weapon */
   const fArm = limbPts(sh.x, sh.y, P.fA[0], P.fA[1], LIMB.up, LIMB.fore);
-  drawLimb(fArm, body, lw);
-  drawHand(fArm, P.fA[0] + P.fA[1], body, lw * .8, f.animT);
+  drawLimb(fArm, bodyPaint, lw);
+  drawHand(fArm, P.fA[0] + P.fA[1], bodyPaint, lw * .8, f.animT);
   if (!classic && (L.gloves || L.gauntlets)) drawGlove(fArm.ex, fArm.ey, L.gloves || L.gauntlets, s);
   if (D.weapon && D.weapon !== 'fists' && !f.noWeapon && !restWeapon) {
     const staffRest = D.weapon === 'staff' && !f.atk && !f.ult;
@@ -358,7 +384,8 @@ function drawFighter(f, baseX, baseY) {
   ctx.restore();
 }
 
-function drawLimb(l, color, lw) {
+function drawLimb(l, color, lw, back) {
+  if (STYLE.classic) { drawTaperLimb(l, color, lw, back); return; }
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   // soft dark outline so fighters pop off the night stage
   ctx.strokeStyle = 'rgba(6,9,16,.55)';
@@ -371,8 +398,10 @@ function drawLimb(l, color, lw) {
 function drawFoot(l, color, s, L) {
   ctx.save();
   if (STYLE.classic) {
-    ctx.strokeStyle = color; ctx.lineWidth = 5 * s; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(l.ex - 1 * s, l.ey); ctx.lineTo(l.ex + 7 * s, l.ey); ctx.stroke();
+    taperRibbon(
+      [[l.ex - 2 * s, l.ey], [l.ex + 3 * s, l.ey + .4 * s], [l.ex + 8 * s, l.ey + 1.6 * s]],
+      [5.4 * s, 5 * s, 3.4 * s], color
+    );
     ctx.restore();
     return;
   }
@@ -394,12 +423,31 @@ function drawHead(f, hx, hy, P, L, D, s, lw) {
 
   /* plain stickman head: hollow circle + eye dot */
   if (STYLE.classic) {
-    const rr = 10.5 * s;
-    ctx.beginPath(); ctx.arc(0, 0, rr, 0, TAU);
-    ctx.fillStyle = '#0a0d16'; ctx.fill();
-    ctx.strokeStyle = D.color; ctx.lineWidth = 4.4 * s; ctx.stroke();
-    ctx.fillStyle = D.color;
-    ctx.beginPath(); ctx.arc(rr * .42, -rr * .08, 1.8 * s, 0, TAU); ctx.fill();
+    const rr = 10.8 * s;
+    // soft halo
+    const halo = ctx.createRadialGradient(0, 0, rr * .5, 0, 0, rr * 2.1);
+    halo.addColorStop(0, hexA(D.color, .16));
+    halo.addColorStop(1, hexA(D.color, 0));
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(0, 0, rr * 2.1, 0, TAU); ctx.fill();
+    // hollow head
+    ctx.beginPath(); ctx.ellipse(0, 0, rr, rr * 1.05, 0, 0, TAU);
+    ctx.fillStyle = 'rgba(8,11,18,.92)'; ctx.fill();
+    ctx.strokeStyle = D.color; ctx.lineWidth = 4.6 * s; ctx.stroke();
+    // rim light (top-left)
+    ctx.save();
+    ctx.globalAlpha = .5;
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5 * s;
+    ctx.beginPath(); ctx.ellipse(0, 0, rr - 1.2 * s, rr * 1.05 - 1.2 * s, 0, Math.PI * 1.06, Math.PI * 1.62); ctx.stroke();
+    ctx.restore();
+    // eye + glint, with an occasional blink
+    const blink = (f.animT + (f.blinkSeed || 0)) % 190 < 6;
+    if (!blink) {
+      ctx.fillStyle = D.color;
+      ctx.beginPath(); ctx.ellipse(rr * .44, -rr * .06, 1.9 * s, 2.4 * s, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      ctx.beginPath(); ctx.arc(rr * .5, -rr * .18, .8 * s, 0, TAU); ctx.fill();
+    }
     ctx.restore();
     return;
   }
@@ -1035,8 +1083,80 @@ function drawHand(arm, angle, color, lw, phase) {
   const hx = arm.ex + Math.sin(a) * 8;
   const hy = arm.ey + Math.cos(a) * 8;
   ctx.lineCap = 'round';
-  ctx.strokeStyle = 'rgba(6,9,16,.5)'; ctx.lineWidth = lw + 2.6;
-  ctx.beginPath(); ctx.moveTo(arm.ex, arm.ey); ctx.lineTo(hx, hy); ctx.stroke();
+  if (!STYLE.classic) {
+    ctx.strokeStyle = 'rgba(6,9,16,.5)'; ctx.lineWidth = lw + 2.6;
+    ctx.beginPath(); ctx.moveTo(arm.ex, arm.ey); ctx.lineTo(hx, hy); ctx.stroke();
+  }
   ctx.strokeStyle = color; ctx.lineWidth = lw;
   ctx.beginPath(); ctx.moveTo(arm.ex, arm.ey); ctx.lineTo(hx, hy); ctx.stroke();
+}
+
+/* ---------------- ink-style tapered strokes ---------------- */
+function taperRibbon(pts, widths, color) {
+  const n = pts.length;
+  const left = [], right = [];
+  for (let i = 0; i < n; i++) {
+    const p = pts[i];
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+    let dx = b[0] - a[0], dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy) || 1;
+    dx /= len; dy /= len;
+    const w = widths[i] * .5;
+    left.push([p[0] - dy * w, p[1] + dx * w]);
+    right.push([p[0] + dy * w, p[1] - dx * w]);
+  }
+  ctx.beginPath();
+  ctx.moveTo(left[0][0], left[0][1]);
+  for (let i = 1; i < n; i++) ctx.lineTo(left[i][0], left[i][1]);
+  for (let i = n - 1; i >= 0; i--) ctx.lineTo(right[i][0], right[i][1]);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  // rounded caps keep joints clean
+  for (const [i, big] of [[0, 1], [n - 1, .82], [Math.floor(n / 2), .9]]) {
+    ctx.beginPath();
+    ctx.arc(pts[i][0], pts[i][1], widths[i] * .5 * big, 0, TAU);
+    ctx.fill();
+  }
+}
+
+function drawTaperLimb(l, color, lw, back) {
+  const pts = [[0, 0], [l.jx, l.jy], [l.ex, l.ey]];
+  const w = [lw * (back ? .92 : 1), lw * .8, lw * .56];
+  taperRibbon(pts, w, color);
+  // subtle inner highlight along the upper segment
+  ctx.save();
+  ctx.globalAlpha = .18;
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1, lw * .22); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0, 0); ctx.lineTo(l.jx * .96, l.jy * .96);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* torso as a bowed tapered ribbon */
+function drawTorso(neckX, neckY, spineBend, color, lw) {
+  const pts = [], w = [];
+  const cx = neckX * .5 + spineBend, cy = neckY * .5;
+  for (let i = 0; i <= 6; i++) {
+    const t = i / 6, it = 1 - t;
+    pts.push([
+      it * it * 0 + 2 * it * t * cx + t * t * neckX,
+      it * it * 0 + 2 * it * t * cy + t * t * neckY
+    ]);
+    w.push(lw * (1.22 - t * .3));
+  }
+  taperRibbon(pts, w, color);
+}
+
+
+function tint(color, k) {
+  const hex = (typeof color === 'string' && color[0] === '#') ? color : '#ffffff';
+  let h = hex.slice(1);
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16);
+  const r = Math.round(clamp(((n >> 16) & 255) * k, 0, 255));
+  const g = Math.round(clamp(((n >> 8) & 255) * k, 0, 255));
+  const b = Math.round(clamp((n & 255) * k, 0, 255));
+  return `rgb(${r},${g},${b})`;
 }

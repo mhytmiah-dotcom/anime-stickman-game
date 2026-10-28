@@ -693,10 +693,13 @@ function drawShadows() {
     if (!f) continue;
     const h = clamp(1 - f.airY / 260, .22, 1);
     ctx.save();
-    ctx.globalAlpha = .42 * h;
-    ctx.fillStyle = '#000000';
+    const g = ctx.createRadialGradient(f.x, f.y + 3, 2, f.x, f.y + 3, 40 * h);
+    g.addColorStop(0, `rgba(0,0,0,${.55 * h})`);
+    g.addColorStop(.55, `rgba(0,0,0,${.28 * h})`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.ellipse(f.x, f.y + 3, 34 * h, 9 * h, 0, 0, TAU);
+    ctx.ellipse(f.x, f.y + 3, 40 * h, 11 * h, 0, 0, TAU);
     ctx.fill();
     ctx.restore();
   }

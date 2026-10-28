@@ -6,8 +6,10 @@ ultimates (E / R), hand-animated skeletons, cloth physics and a lot of VFX.
 Open `index.html` in any modern browser — no build step, no dependencies.
 
 **Look:** fighters default to **classic stickmen** (hollow circle head, single-line body and limbs,
-no hair/capes/accessories). Press **T** on the character-select screen to switch to the
-stylised look (hair, capes, masks, grimoire) and back.
+no hair/capes/accessories), drawn with tapered ink strokes, rounded joints, a top-lit body
+gradient, a hollow ring head with rim light + blinking eye, soft contact shadows and a faint
+colour halo. Press **T** on the character-select screen to switch to the stylised look
+(hair, capes, masks, grimoire) and back.
 
 ## Controls
 
