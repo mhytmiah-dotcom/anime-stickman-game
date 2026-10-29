@@ -6,6 +6,23 @@ A stickman fighting game with a **solo arcade mode against a CPU** and a
 
 Open `index.html` in any modern browser — no build step, no dependencies.
 
+## Also in this repo: Earth &amp; Galaxy
+
+A second zero-dependency app lives in [`cosmos/`](cosmos/) — an interactive field
+guide to the planet under your feet and the galaxy around it. Open
+`cosmos/index.html`: spin the globe, click through the planets, zoom the Milky Way,
+have a chapter read aloud, and finish with a ten-question quiz.
+
+* `cosmos/data.js` — all chapter, planet, galaxy and quiz content, in one place.
+* `cosmos/model.js` — pure helpers: spherical projection, seeded galaxy/starfield
+  generation, quiz scoring, number formatting.
+* `cosmos/scenes.js` — the three canvas paintings (Earth, Solar System, Milky Way).
+* `cosmos/app.js` — navigation, scene loop, speech synthesis, quiz.
+* `cosmos/style.css`, `cosmos/index.html` — layout and shell.
+
+Headless checks: `node test/cosmos.js` (data, model, scenes and the real app in a
+stub DOM). Scene stills: `npm i canvas --no-save && node test/shots-cosmos.js`.
+
 **Look:** fighters default to **classic stickmen** (hollow circle head, single-line body and limbs,
 no hair/capes/accessories), drawn with tapered ink strokes, rounded joints, a top-lit body
 gradient, a hollow ring head with rim light + blinking eye, soft contact shadows and a faint
