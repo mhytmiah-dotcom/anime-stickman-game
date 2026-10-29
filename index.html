@@ -10,63 +10,80 @@
     <div class="stars"></div>
 
     <div class="app-shell">
-      <aside class="sidebar">
-        <div class="brand">
-          <div class="brand-mark">✦</div>
-          <div>
-            <h1>Galaxy</h1>
-            <p>World Explorer</p>
-          </div>
-        </div>
+      <header class="topbar">
+        <div class="eyebrow">UNIVERSE ASSISTANT</div>
+        <div class="title-row">
+          <h1>World & Galaxy Ask</h1>
 
-        <nav class="nav">
-          <button class="nav-item active" data-topic="all">All topics</button>
-          <button class="nav-item" data-topic="earth">Earth</button>
-          <button class="nav-item" data-topic="galaxy">Galaxy</button>
-          <button class="nav-item" data-topic="planet">Planets</button>
-          <button class="nav-item" data-topic="space">Space</button>
-        </nav>
-
-        <div class="quick-prompts">
-          <h3>Ask about</h3>
-          <button class="prompt-btn">What is Earth?</button>
-          <button class="prompt-btn">How big is the Milky Way?</button>
-          <button class="prompt-btn">What planet is known for its rings?</button>
-          <button class="prompt-btn">What is a galaxy?</button>
-        </div>
-      </aside>
-
-      <main class="chat-panel">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">Universe assistant</p>
-            <h2>World & Galaxy Ask</h2>
-          </div>
-          <div class="status">
+          <div class="online-pill">
             <span class="dot"></span>
             Online
           </div>
-        </header>
+        </div>
+      </header>
 
-        <section id="chat" class="chat" aria-live="polite">
-          <div class="message bot">
-            <div class="avatar">AI</div>
-            <div class="bubble">
-              Welcome explorer! Ask me anything about Earth, the solar system, stars, galaxies, and the universe.
+      <section class="stat-cards">
+        <div class="stat-card">
+          <h3>SCALE</h3>
+          <p>The universe is unimaginably large</p>
+        </div>
+        <div class="stat-card">
+          <h3>LIGHT YEARS</h3>
+          <p>Distances are measured in light-years</p>
+        </div>
+        <div class="stat-card">
+          <h3>DISCOVERY</h3>
+          <p>New stars and planets are still being discovered today</p>
+        </div>
+      </section>
+
+      <section id="chat" class="chat" aria-live="polite">
+        <div class="message user">
+          <div class="bubble">What planet is known for its rings?</div>
+        </div>
+
+        <div class="message bot">
+          <div class="avatar">AI</div>
+
+          <div class="bot-content">
+            <h2>Planets</h2>
+            <div
+              class="hero-image"
+              style="background-image: url('https://images.unsplash.com/photo-1614732414444-096e5f1122d5?auto=format&fit=crop&w=1200&q=80');"
+            ></div>
+
+            <p>
+              The solar system has eight planets: Mercury, Venus, Earth, Mars,
+              Jupiter, Saturn, Uranus, and Neptune.
+            </p>
+
+            <div class="fact-grid">
+              <div class="fact-box">
+                <h4>INNER PLANETS</h4>
+                <p>Mercury, Venus, Earth, Mars</p>
+              </div>
+              <div class="fact-box">
+                <h4>OUTER PLANETS</h4>
+                <p>Jupiter, Saturn, Uranus, Neptune</p>
+              </div>
+              <div class="fact-box">
+                <h4>LARGEST</h4>
+                <p>Jupiter is the biggest planet</p>
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <form id="chat-form" class="composer">
-          <input
-            id="user-input"
-            type="text"
-            placeholder="Ask about the world, planets, stars, galaxies..."
-            autocomplete="off"
-          />
-          <button type="submit">Send</button>
-        </form>
-      </main>
+      <form id="chat-form" class="composer">
+        <input
+          id="question"
+          type="text"
+          placeholder="Ask about the world, planets, stars, galaxies..."
+          autocomplete="off"
+        />
+        <button type="submit">Send</button>
+      </form>
     </div>
 
     <script src="script.js"></script>
