@@ -1,334 +1,259 @@
-:root {
-  --bg-deep: #030d1d;
-  --bg-mid: #061c30;
-  --panel: rgba(10, 22, 35, 0.9);
-  --panel-strong: rgba(12, 26, 40, 0.96);
-  --line: rgba(140, 175, 255, 0.18);
-  --text: #edf4ff;
-  --muted: #b2c4dd;
-  --blue: #7fc8ff;
-  --blue-strong: #64b4ff;
-  --purple: #8a7dff;
-  --green: #69e6a3;
-  --shadow: rgba(0, 0, 0, 0.45);
-}
+const chat = document.getElementById("chat");
+const form = document.getElementById("chat-form");
+const input = document.getElementById("question");
 
-* {
-  box-sizing: border-box;
-}
+const knowledge = {
+  world: {
+    title: "Earth",
+    image:
+      "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80",
+    response:
+      "Earth is the third planet from the Sun and the only known planet that supports life. It has oceans, atmosphere, weather, and a rich variety of ecosystems.",
+    facts: [
+      { label: "Type", text: "Rocky planet" },
+      { label: "Age", text: "About 4.5 billion years old" },
+      { label: "Water", text: "About 71% of Earth is covered by water" }
+    ]
+  },
+  galaxy: {
+    title: "Galaxy",
+    image:
+      "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1200&q=80",
+    response:
+      "A galaxy is a massive system of stars, gas, dust, and dark matter held together by gravity. Our home galaxy is the Milky Way.",
+    facts: [
+      { label: "Home", text: "The Milky Way galaxy" },
+      { label: "Size", text: "Contains hundreds of billions of stars" },
+      { label: "Shape", text: "Usually spiral or elliptical" }
+    ]
+  },
+  planet: {
+    title: "Planets",
+    image:
+      "https://images.unsplash.com/photo-1614732414444-096e5f1122d5?auto=format&fit=crop&w=1200&q=80",
+    response:
+      "The solar system has eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune.",
+    facts: [
+      { label: "Inner", text: "Mercury, Venus, Earth, Mars" },
+      { label: "Outer", text: "Jupiter, Saturn, Uranus, Neptune" },
+      { label: "Largest", text: "Jupiter is the biggest planet" }
+    ]
+  },
+  saturn: {
+    title: "Saturn",
+    image:
+      "https://images.unsplash.com/photo-1614728263952-84ea256f9679?auto=format&fit=crop&w=1200&q=80",
+    response:
+      "Saturn is known for its giant rings made mostly of ice and rock particles.",
+    facts: [
+      { label: "Rings", text: "Wide but extremely thin" },
+      { label: "Moons", text: "Has many moons including Titan" },
+      { label: "Type", text: "Gas giant" }
+    ]
+  },
+  space: {
+    title: "Space",
+    image:
+      "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1200&q=80",
+    response:
+      "Space is the vast region beyond Earth’s atmosphere. It contains stars, planets, galaxies, black holes, and deep emptiness.",
+    facts: [
+      { label: "Universe", text: "The observable universe is vast" },
+      { label: "Stars", text: "Stars are massive spheres of hot gas" },
+      { label: "Black holes", text: "Some regions have extreme gravity" }
+    ]
+  },
+  moon: {
+    title: "Moon",
+    image:
+      "https://images.unsplash.com/photo-1502134249126-9f3755a50d4d?auto=format&fit=crop&w=1200&q=80",
+    response:
+      "The Moon is Earth's natural satellite and helps cause ocean tides and shapes the night sky.",
+    facts: [
+      { label: "Distance", text: "About 384,400 km away" },
+      { label: "Orbit", text: "Completes one orbit every 27.3 days" },
+      { label: "Surface", text: "Covered with craters and rock" }
+    ]
+  },
+  star: {
+    title: "Star",
+    image:
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+    response:
+      "A star is a giant glowing sphere of hot plasma powered by nuclear fusion.",
+    facts: [
+      { label: "Sun", text: "Our Sun is a star" },
+      { label: "Life cycle", text: "Stars are born, live, and die" },
+      { label: "Light", text: "Stars give off heat and light" }
+    ]
+  },
+  default: {
+    title: "Universe fact",
+    image:
+      "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1200&q=80",
+    response:
+      "The universe is huge and full of galaxies, stars, planets, and mysteries we are still discovering.",
+    facts: [
+      { label: "Scale", text: "The universe is unimaginably large" },
+      { label: "Light years", text: "Distances are measured in light-years" },
+      { label: "Discovery", text: "New worlds are still being found" }
+    ]
+  }
+};
 
-html, body {
-  margin: 0;
-  min-height: 100%;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: radial-gradient(circle at top, #122848 0%, #08192f 22%, var(--bg-deep) 100%);
-  color: var(--text);
-}
+function buildResponse(question) {
+  const lower = question.toLowerCase();
 
-body {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  position: relative;
-}
+  let result = knowledge.default;
 
-.stars {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,0.9) 0, transparent 100%),
-    radial-gradient(2px 2px at 30% 50%, rgba(255,255,255,0.8) 0, transparent 100%),
-    radial-gradient(2px 2px at 55% 30%, rgba(255,255,255,0.9) 0, transparent 100%),
-    radial-gradient(1.5px 1.5px at 70% 70%, rgba(255,255,255,0.8) 0, transparent 100%),
-    radial-gradient(1.5px 1.5px at 80% 40%, rgba(255,255,255,0.8) 0, transparent 100%);
-  opacity: 0.8;
-}
+  for (const [key, value] of Object.entries(knowledge)) {
+    if (key === "default") continue;
 
-.app-shell {
-  position: relative;
-  z-index: 1;
-  width: min(1100px, 92vw);
-  min-height: 760px;
-  background: rgba(5, 14, 24, 0.82);
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  box-shadow: 0 30px 60px var(--shadow);
-  overflow: hidden;
-  padding: 24px 28px 18px;
-}
+    const matches = value.title.toLowerCase();
+    const keywords = key.split("");
 
-.topbar {
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(7, 18, 32, 0.8);
-  padding: 20px 22px 18px;
-  margin-bottom: 22px;
-}
-
-.eyebrow {
-  font-size: 0.75rem;
-  letter-spacing: 0.16em;
-  color: var(--blue);
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-
-.title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 18px;
-}
-
-h1 {
-  margin: 0;
-  font-size: clamp(2.2rem, 3.2vw, 3.1rem);
-  letter-spacing: -0.05em;
-}
-
-.online-pill {
-  background: rgba(72, 188, 123, 0.08);
-  border: 1px solid rgba(105, 230, 163, 0.4);
-  padding: 10px 18px;
-  border-radius: 999px;
-  color: var(--green);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 120px;
-  justify-content: center;
-}
-
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 14px var(--green);
-}
-
-.stat-cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  background: rgba(15, 26, 43, 0.85);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 18px 20px;
-}
-
-.stat-card h3 {
-  margin: 0 0 10px;
-  color: var(--blue);
-  font-size: 0.8rem;
-  letter-spacing: 0.14em;
-  font-weight: 800;
-}
-
-.stat-card p {
-  margin: 0;
-  font-size: 1.05rem;
-  color: var(--text);
-  line-height: 1.5;
-}
-
-.chat {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  padding: 0;
-  margin-bottom: 18px;
-}
-
-.message {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.message.user {
-  justify-content: flex-end;
-}
-
-.message.user .bubble {
-  background: rgba(132, 147, 176, 0.12);
-  border: 1px solid var(--line);
-  color: var(--text);
-  border-radius: 18px 18px 12px 18px;
-  max-width: 520px;
-  padding: 14px 18px;
-  font-size: 1.08rem;
-  font-weight: 600;
-  text-align: left;
-}
-
-.avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(124,200,255,0.32), rgba(138,125,255,0.22));
-  border: 1px solid var(--line);
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  color: white;
-  flex-shrink: 0;
-}
-
-.message.user .avatar {
-  display: none;
-}
-
-.bot-content {
-  background: rgba(15, 26, 43, 0.85);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 18px 18px 20px;
-  width: min(100%, 860px);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
-}
-
-.bot-content h2 {
-  margin: 0 0 16px;
-  font-size: clamp(2rem, 3vw, 2.8rem);
-  letter-spacing: -0.05em;
-}
-
-.hero-image {
-  width: 100%;
-  height: 250px;
-  border-radius: 16px;
-  background-size: cover;
-  background-position: center;
-  border: 1px solid var(--line);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25);
-  margin-bottom: 16px;
-}
-
-.bot-content p {
-  margin: 0;
-  font-size: 1.08rem;
-  line-height: 1.7;
-  color: var(--text);
-}
-
-.fact-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 18px;
-}
-
-.fact-box {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(17, 31, 48, 0.9);
-  padding: 16px 14px;
-  min-height: 110px;
-}
-
-.fact-box h4 {
-  margin: 0 0 8px;
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-  color: var(--blue);
-  font-weight: 800;
-}
-
-.fact-box p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.6;
-  font-size: 1rem;
-}
-
-.composer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-  margin-top: 8px;
-}
-
-#question {
-  flex: 1;
-  height: 62px;
-  border-radius: 18px;
-  border: 1px solid var(--line);
-  background: rgba(14, 25, 38, 0.9);
-  color: var(--text);
-  padding: 0 18px;
-  font-size: 1.03rem;
-  outline: none;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-}
-
-#question::placeholder {
-  color: rgba(178, 196, 221, 0.7);
-}
-
-#question:focus {
-  border-color: rgba(127, 200, 255, 0.7);
-  box-shadow: 0 0 0 4px rgba(127, 200, 255, 0.08);
-}
-
-.composer button {
-  width: 130px;
-  height: 62px;
-  border: none;
-  border-radius: 18px;
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #071a2b;
-  background: linear-gradient(135deg, var(--blue), #bfdcff);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
-}
-
-.composer button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(127, 200, 255, 0.35);
-}
-
-@media (max-width: 840px) {
-  body {
-    overflow: auto;
+    if (
+      lower.includes(key) ||
+      lower.includes(value.title.toLowerCase()) ||
+      lower.includes("earth") && key === "world" ||
+      lower.includes("planet") && key === "planet" ||
+      lower.includes("galaxy") && key === "galaxy" ||
+      lower.includes("space") && key === "space" ||
+      lower.includes("saturn") && key === "saturn" ||
+      lower.includes("moon") && key === "moon" ||
+      lower.includes("star") && key === "star"
+    ) {
+      result = value;
+      break;
+    }
   }
 
-  .app-shell {
-    min-height: auto;
-    padding: 16px 16px 18px;
-    margin: 18px 12px;
-  }
-
-  .title-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .stat-cards,
-  .fact-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .composer {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .composer button {
-    width: 100%;
-  }
+  return result;
 }
+
+function renderMessage(text, type = "user") {
+  const row = document.createElement("div");
+  row.className = `message ${type}`;
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = "AI";
+
+  if (type === "user") {
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+    row.appendChild(bubble);
+    chat.appendChild(row);
+    return;
+  }
+
+  const content = document.createElement("div");
+  content.className = "bot-content";
+
+  const heading = document.createElement("h2");
+  heading.textContent = result.title;
+
+  const image = document.createElement("div");
+  image.className = "hero-image";
+  image.style.backgroundImage = `url('${result.image}')`;
+
+  const body = document.createElement("p");
+  body.textContent = result.response;
+
+  const factGrid = document.createElement("div");
+  factGrid.className = "fact-grid";
+
+  result.facts.forEach((fact) => {
+    const factBox = document.createElement("div");
+    factBox.className = "fact-box";
+
+    const factTitle = document.createElement("h4");
+    factTitle.textContent = fact.label;
+
+    const factText = document.createElement("p");
+    factText.textContent = fact.text;
+
+    factBox.appendChild(factTitle);
+    factBox.appendChild(factText);
+    factGrid.appendChild(factBox);
+  });
+
+  row.appendChild(avatar);
+  content.appendChild(heading);
+  content.appendChild(image);
+  content.appendChild(body);
+  content.appendChild(factGrid);
+  row.appendChild(content);
+  chat.appendChild(row);
+}
+
+function handleSubmit(event) {
+  event.preventDefault();
+  const question = input.value.trim();
+
+  if (!question) return;
+
+  const userRow = document.createElement("div");
+  userRow.className = "message user";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = question;
+
+  userRow.appendChild(bubble);
+  chat.appendChild(userRow);
+
+  const result = buildResponse(question);
+
+  const botRow = document.createElement("div");
+  botRow.className = "message bot";
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = "AI";
+
+  const content = document.createElement("div");
+  content.className = "bot-content";
+
+  const heading = document.createElement("h2");
+  heading.textContent = result.title;
+
+  const image = document.createElement("div");
+  image.className = "hero-image";
+  image.style.backgroundImage = `url('${result.image}')`;
+
+  const body = document.createElement("p");
+  body.textContent = result.response;
+
+  const factGrid = document.createElement("div");
+  factGrid.className = "fact-grid";
+
+  result.facts.forEach((fact) => {
+    const factBox = document.createElement("div");
+    factBox.className = "fact-box";
+
+    const factTitle = document.createElement("h4");
+    factTitle.textContent = fact.label;
+
+    const factText = document.createElement("p");
+    factText.textContent = fact.text;
+
+    factBox.appendChild(factTitle);
+    factBox.appendChild(factText);
+    factGrid.appendChild(factBox);
+  });
+
+  botRow.appendChild(avatar);
+  content.appendChild(heading);
+  content.appendChild(image);
+  content.appendChild(body);
+  content.appendChild(factGrid);
+  botRow.appendChild(content);
+  chat.appendChild(botRow);
+
+  chat.scrollTop = chat.scrollHeight;
+  input.value = "";
+}
+
+form.addEventListener("submit", handleSubmit);
