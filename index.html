@@ -1,1 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World & Galaxy Ask</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="stars"></div>
 
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">✦</div>
+          <div>
+            <h1>Galaxy</h1>
+            <p>World Explorer</p>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <button class="nav-item active" data-topic="all">All topics</button>
+          <button class="nav-item" data-topic="earth">Earth</button>
+          <button class="nav-item" data-topic="galaxy">Galaxy</button>
+          <button class="nav-item" data-topic="planet">Planets</button>
+          <button class="nav-item" data-topic="space">Space</button>
+        </nav>
+
+        <div class="quick-prompts">
+          <h3>Ask about</h3>
+          <button class="prompt-btn">What is Earth?</button>
+          <button class="prompt-btn">How big is the Milky Way?</button>
+          <button class="prompt-btn">What planet is known for its rings?</button>
+          <button class="prompt-btn">What is a galaxy?</button>
+        </div>
+      </aside>
+
+      <main class="chat-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Universe assistant</p>
+            <h2>World & Galaxy Ask</h2>
+          </div>
+          <div class="status">
+            <span class="dot"></span>
+            Online
+          </div>
+        </header>
+
+        <section id="chat" class="chat" aria-live="polite">
+          <div class="message bot">
+            <div class="avatar">AI</div>
+            <div class="bubble">
+              Welcome explorer! Ask me anything about Earth, the solar system, stars, galaxies, and the universe.
+            </div>
+          </div>
+        </section>
+
+        <form id="chat-form" class="composer">
+          <input
+            id="user-input"
+            type="text"
+            placeholder="Ask about the world, planets, stars, galaxies..."
+            autocomplete="off"
+          />
+          <button type="submit">Send</button>
+        </form>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
