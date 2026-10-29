@@ -1,209 +1,334 @@
-const chat = document.getElementById("chat");
-const form = document.getElementById("chat-form");
-const input = document.getElementById("user-input");
-const navItems = document.querySelectorAll(".nav-item");
-const promptButtons = document.querySelectorAll(".prompt-btn");
+:root {
+  --bg-deep: #030d1d;
+  --bg-mid: #061c30;
+  --panel: rgba(10, 22, 35, 0.9);
+  --panel-strong: rgba(12, 26, 40, 0.96);
+  --line: rgba(140, 175, 255, 0.18);
+  --text: #edf4ff;
+  --muted: #b2c4dd;
+  --blue: #7fc8ff;
+  --blue-strong: #64b4ff;
+  --purple: #8a7dff;
+  --green: #69e6a3;
+  --shadow: rgba(0, 0, 0, 0.45);
+}
 
-const knowledge = {
-  earth: {
-    keyword: "earth",
-    title: "Earth",
-    response: "Earth is the third planet from the Sun and the only known planet that supports life. It has oceans, atmosphere, weather, and a rich variety of ecosystems.",
-    facts: [
-      { label: "Type", text: "Rocky planet" },
-      { label: "Moon", text: "1 natural moon" },
-      { label: "Water", text: "About 71% of Earth is covered by water" }
-    ]
-  },
-  galaxy: {
-    keyword: "galaxy",
-    title: "Galaxy",
-    response: "A galaxy is a huge system of stars, gas, dust, and dark matter held together by gravity. Our home galaxy is the Milky Way.",
-    facts: [
-      { label: "Home", text: "The Milky Way galaxy" },
-      { label: "Size", text: "It contains hundreds of billions of stars" },
-      { label: "Shape", text: "Spiral-shaped galaxy" }
-    ]
-  },
-  planet: {
-    keyword: "planet",
-    title: "Planets",
-    response: "The solar system has eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune.",
-    facts: [
-      { label: "Inner planets", text: "Mercury, Venus, Earth, Mars" },
-      { label: "Outer planets", text: "Jupiter, Saturn, Uranus, Neptune" },
-      { label: "Largest", text: "Jupiter is the biggest planet" }
-    ]
-  },
-  space: {
-    keyword: "space",
-    title: "Space",
-    response: "Space is the vast region beyond Earth's atmosphere, filled with stars, planets, nebulae, black holes, and empty distances between objects.",
-    facts: [
-      { label: "Universe", text: "Space contains the observable universe" },
-      { label: "Stars", text: "Stars are giant balls of hot gas" },
-      { label: "Black holes", text: "Some regions of space have extremely strong gravity" }
-    ]
-  },
-  moon: {
-    keyword: "moon",
-    title: "Moon",
-    response: "The Moon is Earth's natural satellite and influences tides, seasons, and the night sky.",
-    facts: [
-      { label: "Distance", text: "About 384,400 km from Earth" },
-      { label: "Surface", text: "Covered with craters and rocky terrain" },
-      { label: "Orbit", text: "It orbits Earth approximately every 27.3 days" }
-    ]
-  },
-  mars: {
-    keyword: "mars",
-    title: "Mars",
-    response: "Mars is the red planet, known for its iron-rich dust and giant volcanoes. Scientists study it for signs of ancient water.",
-    facts: [
-      { label: "Color", text: "Reddish because of iron oxide" },
-      { label: "Moons", text: "Phobos and Deimos" },
-      { label: "Exploration", text: "Robotic missions have explored its surface" }
-    ]
-  },
-  saturn: {
-    keyword: "saturn",
-    title: "Saturn",
-    response: "Saturn is famous for its bright rings made mostly of ice and rock particles.",
-    facts: [
-      { label: "Rings", text: "The rings are wide but very thin" },
-      { label: "Moons", text: "It has many moons, including Titan" },
-      { label: "Gas giant", text: "Saturn is a giant planet made mostly of gas" }
-    ]
-  },
-  star: {
-    keyword: "star",
-    title: "Star",
-    response: "A star is a massive glowing sphere of hot plasma powered by nuclear fusion at its core.",
-    facts: [
-      { label: "Sun", text: "Our Sun is a star" },
-      { label: "Life cycle", text: "Stars are born, live, and die over vast timescales" },
-      { label: "Light", text: "Stars produce light and heat as they burn fuel" }
-    ]
-  },
-  default: {
-    keyword: "general",
-    title: "Universe fact",
-    response: "The universe is incredibly vast, containing billions of galaxies, each with billions of stars. It is still being explored with telescopes, rovers, and space missions.",
-    facts: [
-      { label: "Scale", text: "The universe is unimaginably large" },
-      { label: "Light years", text: "Distances are measured in light-years" },
-      { label: "Discovery", text: "New stars and planets are still being discovered today" }
-    ]
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: radial-gradient(circle at top, #122848 0%, #08192f 22%, var(--bg-deep) 100%);
+  color: var(--text);
+}
+
+body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,0.9) 0, transparent 100%),
+    radial-gradient(2px 2px at 30% 50%, rgba(255,255,255,0.8) 0, transparent 100%),
+    radial-gradient(2px 2px at 55% 30%, rgba(255,255,255,0.9) 0, transparent 100%),
+    radial-gradient(1.5px 1.5px at 70% 70%, rgba(255,255,255,0.8) 0, transparent 100%),
+    radial-gradient(1.5px 1.5px at 80% 40%, rgba(255,255,255,0.8) 0, transparent 100%);
+  opacity: 0.8;
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+  width: min(1100px, 92vw);
+  min-height: 760px;
+  background: rgba(5, 14, 24, 0.82);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  box-shadow: 0 30px 60px var(--shadow);
+  overflow: hidden;
+  padding: 24px 28px 18px;
+}
+
+.topbar {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(7, 18, 32, 0.8);
+  padding: 20px 22px 18px;
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  color: var(--blue);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 3.2vw, 3.1rem);
+  letter-spacing: -0.05em;
+}
+
+.online-pill {
+  background: rgba(72, 188, 123, 0.08);
+  border: 1px solid rgba(105, 230, 163, 0.4);
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: var(--green);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 14px var(--green);
+}
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: rgba(15, 26, 43, 0.85);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 18px 20px;
+}
+
+.stat-card h3 {
+  margin: 0 0 10px;
+  color: var(--blue);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  font-weight: 800;
+}
+
+.stat-card p {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 0;
+  margin-bottom: 18px;
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.message.user {
+  justify-content: flex-end;
+}
+
+.message.user .bubble {
+  background: rgba(132, 147, 176, 0.12);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 18px 18px 12px 18px;
+  max-width: 520px;
+  padding: 14px 18px;
+  font-size: 1.08rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(124,200,255,0.32), rgba(138,125,255,0.22));
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+}
+
+.message.user .avatar {
+  display: none;
+}
+
+.bot-content {
+  background: rgba(15, 26, 43, 0.85);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 18px 18px 20px;
+  width: min(100%, 860px);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+
+.bot-content h2 {
+  margin: 0 0 16px;
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  letter-spacing: -0.05em;
+}
+
+.hero-image {
+  width: 100%;
+  height: 250px;
+  border-radius: 16px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--line);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25);
+  margin-bottom: 16px;
+}
+
+.bot-content p {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.fact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.fact-box {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(17, 31, 48, 0.9);
+  padding: 16px 14px;
+  min-height: 110px;
+}
+
+.fact-box h4 {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.fact-box p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+}
+
+#question {
+  flex: 1;
+  height: 62px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(14, 25, 38, 0.9);
+  color: var(--text);
+  padding: 0 18px;
+  font-size: 1.03rem;
+  outline: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+#question::placeholder {
+  color: rgba(178, 196, 221, 0.7);
+}
+
+#question:focus {
+  border-color: rgba(127, 200, 255, 0.7);
+  box-shadow: 0 0 0 4px rgba(127, 200, 255, 0.08);
+}
+
+.composer button {
+  width: 130px;
+  height: 62px;
+  border: none;
+  border-radius: 18px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #071a2b;
+  background: linear-gradient(135deg, var(--blue), #bfdcff);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.composer button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(127, 200, 255, 0.35);
+}
+
+@media (max-width: 840px) {
+  body {
+    overflow: auto;
   }
-};
 
-function addMessage(text, type = "bot") {
-  const message = document.createElement("div");
-  message.className = `message ${type}`;
+  .app-shell {
+    min-height: auto;
+    padding: 16px 16px 18px;
+    margin: 18px 12px;
+  }
 
-  const avatar = document.createElement("div");
-  avatar.className = "avatar";
-  avatar.textContent = type === "bot" ? "AI" : "You";
+  .title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-  bubble.innerHTML = text;
+  .stat-cards,
+  .fact-grid {
+    grid-template-columns: 1fr;
+  }
 
-  message.appendChild(avatar);
-  message.appendChild(bubble);
-  chat.appendChild(message);
-  chat.scrollTop = chat.scrollHeight;
+  .composer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .composer button {
+    width: 100%;
+  }
 }
-
-function createAnswerCard(title, text) {
-  const card = document.createElement("div");
-  card.className = "answer-card";
-
-  const heading = document.createElement("h4");
-  heading.textContent = title;
-
-  const paragraph = document.createElement("p");
-  paragraph.textContent = text;
-
-  card.appendChild(heading);
-  card.appendChild(paragraph);
-
-  return card;
-}
-
-function getTopicAnswer(prompt) {
-  const lowerPrompt = prompt.toLowerCase();
-
-  const matchedEntry = Object.entries(knowledge).find(([key, value]) => {
-    if (key === "default") return false;
-    return lowerPrompt.includes(value.keyword);
-  });
-
-  const selected = matchedEntry ? matchedEntry[1] : knowledge.default;
-
-  const answerHtml = `
-    <strong>${selected.title}</strong><br>
-    ${selected.response}
-  `;
-
-  const cardsWrap = document.createElement("div");
-  cardsWrap.className = "answer-cards";
-
-  selected.facts.forEach((fact) => {
-    const card = createAnswerCard(fact.label, fact.text);
-    cardsWrap.appendChild(card);
-  });
-
-  return { answerHtml, cardsWrap };
-}
-
-function handleSubmit(event) {
-  event.preventDefault();
-  const prompt = input.value.trim();
-
-  if (!prompt) return;
-
-  addMessage(prompt, "user");
-
-  const { answerHtml, cardsWrap } = getTopicAnswer(prompt);
-
-  const botBubble = document.createElement("div");
-  botBubble.className = "bubble";
-  botBubble.innerHTML = answerHtml;
-
-  const message = document.createElement("div");
-  message.className = "message bot";
-
-  const avatar = document.createElement("div");
-  avatar.className = "avatar";
-  avatar.textContent = "AI";
-
-  message.appendChild(avatar);
-  message.appendChild(botBubble);
-  chat.appendChild(message);
-
-  const cardGroup = document.createElement("div");
-  cardGroup.className = "answer-cards";
-  cardGroup.appendChild(cardsWrap);
-
-  chat.appendChild(cardGroup);
-  chat.scrollTop = chat.scrollHeight;
-
-  input.value = "";
-}
-
-form.addEventListener("submit", handleSubmit);
-
-promptButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    input.value = button.textContent;
-    form.requestSubmit();
-  });
-});
-
-navItems.forEach((button) => {
-  button.addEventListener("click", () => {
-    navItems.forEach((el) => el.classList.remove("active"));
-    button.classList.add("active");
-  });
-});
