@@ -1,10 +1,3 @@
-# STICK LEGENDS — Ult Fighters
-
-A stickman fighting game with a **solo arcade mode against a CPU** and a
-**2-player mode for one keyboard**. 8 fighters, each with two ultimates
-(E / R), hand-animated skeletons, cloth physics and a lot of VFX.
-
-Open `index.html` in any modern browser — no build step, no dependencies.
 
 ## Also in this repo: Earth &amp; Galaxy
 
