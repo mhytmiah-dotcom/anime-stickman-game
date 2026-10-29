@@ -65,6 +65,18 @@ body::before {
 
 [hidden] { display: none !important; }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 a { color: var(--accent); text-decoration-color: rgba(255, 207, 122, 0.4); }
 a:hover { color: #ffe3a6; }
 
@@ -467,9 +479,9 @@ main {
 /* ---------------- read column ---------------- */
 .read { min-width: 0; }
 .narrate { margin-bottom: 20px; background: rgba(255, 255, 255, 0.03); border-color: var(--line-strong); }
-.narrate::before { content: "◍"; color: var(--accent); }
 .narrate.speaking { border-color: rgba(255, 207, 122, 0.6); color: var(--accent); }
 
+.narration { max-width: 72ch; }
 .narration p { font-size: 0.98rem; line-height: 1.78; color: #ccd7ee; margin-bottom: 1.1em; }
 .narration p:first-child { font-size: 1.06rem; color: #e2e9f8; }
 
@@ -707,15 +719,46 @@ main {
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr) auto;
   gap: 12px;
-  align-items: baseline;
+  align-items: start;
   padding: 11px 2px;
   border-bottom: 1px solid rgba(140, 170, 255, 0.09);
   font-size: 0.86rem;
   color: var(--muted);
 }
-.review-mark { font-weight: 700; }
-.review-row.ok .review-mark { color: var(--green); }
-.review-row.bad .review-mark { color: var(--red); }
+.review-mark {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+}
+.review-row.ok .review-mark { border-color: rgba(116, 224, 168, 0.6); background: rgba(116, 224, 168, 0.12); }
+.review-row.ok .review-mark::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border-right: 2px solid var(--green);
+  border-bottom: 2px solid var(--green);
+  transform: rotate(45deg);
+}
+.review-row.bad .review-mark { border-color: rgba(255, 138, 138, 0.6); background: rgba(255, 138, 138, 0.12); }
+.review-row.bad .review-mark::before,
+.review-row.bad .review-mark::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 6px;
+  width: 8px;
+  height: 2px;
+  background: var(--red);
+}
+.review-row.bad .review-mark::before { transform: rotate(45deg); }
+.review-row.bad .review-mark::after { transform: rotate(-45deg); }
 .review-answer { font-size: 0.78rem; color: var(--text); text-align: right; }
 
 

@@ -126,13 +126,13 @@
     {
       id: 'jupiter', name: 'Jupiter', type: 'Gas giant',
       color: '#d9b08c', dark: '#8a5f3d', size: 13.5, orbit: 143, period: 11.86, phase: 1.1,
-      stats: [{ value: '11.9 years', label: 'year' }, { value: '139,820 km', label: 'diameter' }, { value: '95', label: 'known moons' }],
+      stats: [{ value: '11.9 years', label: 'year' }, { value: '139,820 km', label: 'diameter' }, { value: '95+', label: 'known moons' }],
       blurb: 'More massive than every other planet combined. The Great Red Spot is a storm wider than Earth.'
     },
     {
       id: 'saturn', name: 'Saturn', type: 'Gas giant',
       color: '#e3d3a3', dark: '#9c8652', size: 11.4, orbit: 176, period: 29.45, phase: 3.4,
-      stats: [{ value: '29.4 years', label: 'year' }, { value: '116,460 km', label: 'diameter' }, { value: '~274,000 km/h', label: 'ring speed' }],
+      stats: [{ value: '29.4 years', label: 'year' }, { value: '116,460 km', label: 'diameter' }, { value: '~70,000 km/h', label: 'ring particle speed' }],
       blurb: 'Its rings are billions of ice and rock chunks, most smaller than a house, spanning 280,000 km but only tens of metres thick.'
     },
     {

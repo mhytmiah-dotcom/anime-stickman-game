@@ -41,6 +41,7 @@ cosmos/
   model.js     pure math: projection, seeded galaxy/starfield, scoring
   scenes.js    drawEarth / drawSystem / drawGalaxy
   app.js       DOM building, scene loop, narration, quiz, routing
+  README.md    this file
 ```
 
 `model.js`, `data.js` and `scenes.js` are plain UMD modules so the browser and

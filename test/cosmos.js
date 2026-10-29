@@ -502,6 +502,40 @@ check('app: beyond chapter renders cards and unknown routes fall back', () => {
   return heading;
 });
 
+check('app: accessibility wiring on generated markup', () => {
+  const main = sandbox.document.getElementById('chapters');
+  const buttons = [];
+  const canvases = [];
+  const ids = new Set();
+  const labels = [];
+  const walk = node => {
+    if (node.attributes) {
+      if (node.attributes.id) ids.add(node.attributes.id);
+      if (node.attributes['aria-labelledby']) labels.push(node.attributes['aria-labelledby']);
+    }
+    if (node.tagName === 'BUTTON') buttons.push(node);
+    if (node.tagName === 'CANVAS') canvases.push(node);
+    (node.children || []).forEach(walk);
+  };
+  walk(main);
+  walk(sandbox.document.getElementById('chapter-nav'));
+
+  assert(buttons.length > 20, 'expected many buttons, got ' + buttons.length);
+  buttons.forEach(b => assert(b.getAttribute('type') === 'button', 'button without type=button'));
+  assert(canvases.length === 4, 'expected four canvases');
+  canvases.forEach(c => assert((c.getAttribute('aria-label') || '').length > 15, 'canvas missing aria-label'));
+  labels.forEach(id => assert(ids.has(id), 'aria-labelledby points at missing id ' + id));
+
+  app.goTo('system');
+  const current = app.state.nav.filter(b => b.getAttribute('aria-current') === 'page');
+  assert(current.length === 1 && current[0].dataset.target === 'system', 'exactly one nav item should be current');
+  app.goTo('quiz');
+  assert(app.state.panels.quiz.querySelector('.quiz-question'), 'quiz question missing');
+  assert(app.state.panels.quiz.querySelector('.quiz-options').children.length === 4, 'quiz needs four options');
+  app.goTo('overview');
+  return buttons.length + ' buttons, ' + canvases.length + ' labelled canvases';
+});
+
 check('static: html, css and scripts are wired and balanced', () => {
   const dir = path.join(__dirname, '..', 'cosmos');
   const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');

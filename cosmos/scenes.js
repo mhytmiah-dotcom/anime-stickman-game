@@ -222,12 +222,12 @@
     /* polar ice */
     const capA = M.projectToScreen(0, 78, spin, cx, cy, R);
     const capB = M.projectToScreen(0, -78, spin, cx, cy, R);
-    ctx.fillStyle = 'rgba(232,246,255,0.88)';
+    ctx.fillStyle = 'rgba(236,247,255,0.94)';
     ctx.beginPath();
-    ctx.ellipse(capA.x, capA.y, R * 0.36, R * 0.13, 0, 0, TAU);
+    ctx.ellipse(capA.x, capA.y, R * 0.5, R * 0.11, 0, 0, TAU);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(capB.x, capB.y, R * 0.42, R * 0.16, 0, 0, TAU);
+    ctx.ellipse(capB.x, capB.y, R * 0.55, R * 0.13, 0, 0, TAU);
     ctx.fill();
 
     /* cloud haze */
@@ -313,14 +313,14 @@
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    /* labels */
-    ctx.font = '600 11px ' + FONT;
+    /* labels, kept in the top corners clear of the control chips */
+    ctx.font = '600 10px ' + FONT;
     ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(170,205,255,0.55)';
-    ctx.fillText('EARTH', cx - R, cy + R + 24);
+    ctx.fillStyle = 'rgba(170,205,255,0.6)';
+    ctx.fillText('EARTH', 14, 20);
     ctx.textAlign = 'right';
-    ctx.fillStyle = 'rgba(170,205,255,0.38)';
-    ctx.fillText('12,742 km across', cx + R, cy + R + 24);
+    ctx.fillStyle = 'rgba(170,205,255,0.42)';
+    ctx.fillText('12,742 km across', w - 14, 20);
     ctx.textAlign = 'left';
   }
 
@@ -445,19 +445,22 @@
         ctx.stroke();
       }
 
-      ctx.font = (selected ? '600 ' : '500 ') + Math.max(9, 10 * k) + 'px ' + FONT;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = selected ? '#ffffff' : 'rgba(200,214,244,' + (hovered ? 0.85 : 0.5) + ')';
-      const labelY = py + size + 13 + (i < 4 ? (i % 2) * 9 : 0);
-      ctx.fillText(p.name.toUpperCase(), px, labelY);
+      const showAllLabels = w >= 460;
+      if (showAllLabels || selected || hovered) {
+        ctx.font = (selected ? '600 ' : '500 ') + Math.max(9, 10 * k) + 'px ' + FONT;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = selected ? '#ffffff' : 'rgba(200,214,244,' + (hovered ? 0.85 : 0.5) + ')';
+        const labelY = py + size + 13 + (i < 4 ? (i % 2) * 9 : 0);
+        ctx.fillText(p.name.toUpperCase(), px, labelY);
+      }
     }
     ctx.textAlign = 'left';
 
-    /* scale note */
+    /* scale note, top-right so the control chips stay clear */
     ctx.font = '500 10px ' + FONT;
-    ctx.fillStyle = 'rgba(160,185,235,0.45)';
+    ctx.fillStyle = 'rgba(160,185,235,0.5)';
     ctx.textAlign = 'right';
-    ctx.fillText('orbits compressed · speeds exaggerated', w - 14, h - 12);
+    ctx.fillText(w >= 460 ? 'orbits compressed · speeds exaggerated' : 'not to scale', w - 14, 18);
     ctx.textAlign = 'left';
     return positions;
   }
@@ -595,6 +598,7 @@
     const sy = cy + Math.sin(sunTheta + rotation) * sunR * SQUASH;
     const pulse = 0.6 + 0.4 * Math.sin(time * 2);
 
+    const wide = w >= 480;
     if (s.labels !== false) {
       ctx.strokeStyle = 'rgba(255,214,120,' + (0.4 + pulse * 0.3) + ')';
       ctx.lineWidth = 1.4;
@@ -607,52 +611,61 @@
       ctx.fill();
 
       const dir = sx > w * 0.55 ? -1 : 1;
-      const labelX = sx + dir * 50;
-      ctx.strokeStyle = 'rgba(255,230,180,0.45)';
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(sx + dir * 10, sy - 12);
-      ctx.lineTo(sx + dir * 44, sy - 46);
-      ctx.lineTo(sx + dir * 160, sy - 46);
-      ctx.stroke();
-      ctx.textAlign = dir > 0 ? 'left' : 'right';
-      ctx.font = '600 11px ' + FONT;
-      ctx.fillStyle = 'rgba(255,236,190,0.9)';
-      ctx.fillText('YOU ARE HERE', labelX, sy - 52);
-      ctx.font = '400 10px ' + FONT;
-      ctx.fillStyle = 'rgba(220,228,255,0.55)';
-      ctx.fillText('26,000 light-years from the core', labelX, sy - 38);
+      if (wide) {
+        const labelX = sx + dir * 50;
+        ctx.strokeStyle = 'rgba(255,230,180,0.45)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(sx + dir * 10, sy - 12);
+        ctx.lineTo(sx + dir * 44, sy - 26);
+        ctx.lineTo(sx + dir * 160, sy - 26);
+        ctx.stroke();
+        ctx.textAlign = dir > 0 ? 'left' : 'right';
+        ctx.font = '600 11px ' + FONT;
+        ctx.fillStyle = 'rgba(255,236,190,0.9)';
+        ctx.fillText('YOU ARE HERE', labelX, sy - 58);
+        ctx.font = '400 10px ' + FONT;
+        ctx.fillStyle = 'rgba(220,228,255,0.55)';
+        ctx.fillText('26,000 light-years from the core', labelX, sy - 44);
 
-      ctx.textAlign = 'center';
-      ctx.font = '500 10px ' + FONT;
-      ctx.fillStyle = 'rgba(255,240,210,0.6)';
-      ctx.fillText('SAGITTARIUS A*', cx, cy + R * 0.3 * SQUASH + 16);
-      ctx.strokeStyle = 'rgba(255,240,210,0.3)';
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy + 3);
-      ctx.lineTo(cx, cy + R * 0.3 * SQUASH + 8);
-      ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.font = '500 10px ' + FONT;
+        ctx.fillStyle = 'rgba(255,240,210,0.6)';
+        ctx.fillText('SAGITTARIUS A*', cx, cy + R * 0.3 * SQUASH + 16);
+        ctx.strokeStyle = 'rgba(255,240,210,0.3)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 3);
+        ctx.lineTo(cx, cy + R * 0.3 * SQUASH + 8);
+        ctx.stroke();
+      } else {
+        ctx.textAlign = dir > 0 ? 'left' : 'right';
+        ctx.font = '600 9px ' + FONT;
+        ctx.fillStyle = 'rgba(255,236,190,0.9)';
+        ctx.fillText('YOU', sx + dir * 13, sy + 3);
+      }
     }
 
-    /* scale bar */
-    ctx.strokeStyle = 'rgba(190,210,255,0.4)';
-    ctx.lineWidth = 1;
-    const barLen = Math.min(150, w * 0.3);
-    const bx = 18;
-    const by = h - 20;
-    ctx.beginPath();
-    ctx.moveTo(bx, by);
-    ctx.lineTo(bx + barLen, by);
-    ctx.moveTo(bx, by - 4);
-    ctx.lineTo(bx, by + 4);
-    ctx.moveTo(bx + barLen, by - 4);
-    ctx.lineTo(bx + barLen, by + 4);
-    ctx.stroke();
-    ctx.textAlign = 'left';
-    ctx.font = '500 10px ' + FONT;
-    ctx.fillStyle = 'rgba(190,210,255,0.55)';
-    ctx.fillText('100,000 light-years across', bx, by - 10);
+    /* scale bar, top-left so the control chips stay clear (hidden on the hero) */
+    if (s.labels !== false && wide) {
+      const barLen = Math.min(150, w * 0.3);
+      const bx = 18;
+      const by = 30;
+      ctx.strokeStyle = 'rgba(190,210,255,0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + barLen, by);
+      ctx.moveTo(bx, by - 4);
+      ctx.lineTo(bx, by + 4);
+      ctx.moveTo(bx + barLen, by - 4);
+      ctx.lineTo(bx + barLen, by + 4);
+      ctx.stroke();
+      ctx.textAlign = 'left';
+      ctx.font = '500 10px ' + FONT;
+      ctx.fillStyle = 'rgba(190,210,255,0.55)';
+      ctx.fillText('100,000 light-years across', bx, by - 8);
+    }
 
     ctx.textAlign = 'left';
     return { sun: { x: sx, y: sy }, center: { x: cx, y: cy } };

@@ -71,7 +71,7 @@
       p('Four short chapters about the planet under your feet and the 100,000-light-year city of stars around it. Spin the globe, fly the orbits, then test yourself.', 'hero-lede'),
       h('div', { className: 'hero-actions' }, [
         h('button', {
-          className: 'btn primary', text: 'Start the tour →',
+          className: 'btn primary', text: 'Start the tour',
           attrs: { type: 'button' }, on: { click: () => goTo('earth') }
         }),
         h('button', {
@@ -181,7 +181,7 @@
       const speed = h('input', {
         attrs: { type: 'range', min: '0', max: '3', step: '0.05', 'aria-label': 'Orbit speed' }
       });
-      speed.value = String(reduceMotion ? 0.35 : 1);
+      speed.value = String(reduceMotion ? 0 : 1);
       speed.addEventListener('input', () => { entry.speed = parseFloat(speed.value); });
       entry.speed = parseFloat(speed.value);
       tools.appendChild(chip('Speed', speed));
@@ -269,7 +269,7 @@
       const canvas = h('canvas', {
         className: 'scene-canvas',
         attrs: {
-          role: 'img',
+          role: ch.id === 'system' ? 'group' : 'img',
           'aria-label': ch.id === 'earth'
             ? 'A rotating stylised globe of Earth with day and night sides, city lights and the Moon'
             : ch.id === 'system'
@@ -417,8 +417,11 @@
       const review = h('ol', { className: 'quiz-review' });
       D.quiz.forEach((item, i) => {
         const correct = M.scoreAnswer(item, q.answers[i]);
-        review.appendChild(h('li', { className: correct ? 'review-row ok' : 'review-row bad' }, [
-          h('span', { className: 'review-mark', text: correct ? '✓' : '✕' }),
+        review.appendChild(h('li', {
+          className: correct ? 'review-row ok' : 'review-row bad'
+        }, [
+          h('span', { className: 'review-mark', attrs: { 'aria-hidden': 'true' } }),
+          h('span', { className: 'sr-only', text: correct ? 'Correct: ' : 'Incorrect: ' }),
           h('span', { text: item.q }),
           h('span', { className: 'review-answer', text: item.options[item.answer] })
         ]));
@@ -492,7 +495,7 @@
 
     const nextBtn = h('button', {
       className: 'btn primary',
-      text: q.index === D.quiz.length - 1 ? 'See results' : 'Next question →',
+      text: q.index === D.quiz.length - 1 ? 'See results' : 'Next question',
       attrs: { type: 'button' },
       on: { click: nextQuestion }
     });
